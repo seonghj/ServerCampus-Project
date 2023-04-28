@@ -6,9 +6,9 @@ namespace DungeonFarming.Services;
 
 public interface IAccountDb
 {
-    public Task<ErrorCode> CreateAccountAsync(String id, String pw);
+    public Task<ErrorCode> CreateAccountAsync(String AccountId, String pw);
     
-    public Task<Tuple<ErrorCode, Int64>> VerifyAccount(String id, String pw);
+    public Task<ErrorCode> VerifyAccount(String AccountId, String pw);
 
-    public Task<ErrorCode> DeleteAccountAsync(String id);
+    public Task<ErrorCode> DeleteAccountAsync(String AccountId);
 }

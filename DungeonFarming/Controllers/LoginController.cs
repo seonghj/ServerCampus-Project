@@ -29,7 +29,7 @@ public class Login : ControllerBase
     {
         var response = new PkLoginResponse();
         // ID, PW 검증
-        var (errorCode, accountId) = await _accountDb.VerifyAccount(request.ID, request.Password);
+        var errorCode = await _accountDb.VerifyAccount(request.ID, request.Password);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -38,7 +38,7 @@ public class Login : ControllerBase
 
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID}, "Login Success");
 
-        (errorCode, response.CharInfo) = await _gameDb.GetCharacterInfo(request.ID);
+        (errorCode, response.P_Info) = await _gameDb.GetPlayerInfo(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

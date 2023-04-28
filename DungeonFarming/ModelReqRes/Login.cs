@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DungeonFarming.ModelDB;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace DungeonFarming.ModelReqRes;
@@ -20,5 +21,5 @@ public class PkLoginResponse
     [Required] public String AuthToken { get; set; } = "";
 
     [Required]
-    public String CharInfo { get; set; }
+    public PlayerInfo P_Info { get; set; } = null;
 }

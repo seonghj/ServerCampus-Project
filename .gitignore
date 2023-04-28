@@ -14,3 +14,7 @@
 *.log
 Debug/
 Release/
+*.csproj.user
+*.csproj
+log/
+obj/

@@ -27,21 +27,19 @@ public class GameDb : IGameDb
         _dbConfig = dbConfig;
         _logger = logger;
 
-        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
-
-        _dbConn.Open();
+        GameDBOpen();
 
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
     }
 
-    public async Task<ErrorCode> InsertCharacter(string Id)
+    public async Task<ErrorCode> InsertPlayer(string AccountId)
     {
         try
         {
-            var characterId = await _queryFactory.Query("charinfo").InsertGetIdAsync<int>(new
+            var PlayerId = await _queryFactory.Query("Playerinfo").InsertGetIdAsync<int>(new
             {
-                ID = Id,
+                AccountID = AccountId,
                 Level = 1,
                 Exp = 100,
                 Hp = 50,
@@ -55,39 +53,49 @@ public class GameDb : IGameDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDb.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
-            return ErrorCode.CreateCharacterFailException;
+                $"[GameDb.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
+            return ErrorCode.CreatePlayerFailException;
         }
 
     }
 
-    public Task<ErrorCode> InsertCharacterItem(string Id)
+    public Task<ErrorCode> InsertPlayerItem(string UID)
     {
         throw new NotImplementedException();
     }
 
-    private void Open()
+    private void GameDBOpen()
     {
         _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
 
         _dbConn.Open();
     }
 
-    public async Task<Tuple<ErrorCode, string>> GetCharacterInfo(string Id)
+    private void GameDBClose()
+    {
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+
+        _dbConn.Close();
+    }
+
+    public void Dispose()
+    {
+        GameDBClose();
+    }
+
+    public async Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfo(string AccountId)
     {
         try
         {
-            var cinfo = await _queryFactory.Query("charinfo").Where("ID", Id).FirstOrDefaultAsync<CharInfo>();
+            var P_Info = await _queryFactory.Query("playerinfo").Where("AccountID", AccountId).FirstOrDefaultAsync<PlayerInfo>();
 
-            string CInfojson = JsonSerializer.Serialize<CharInfo>(cinfo);
-
-            return new Tuple<ErrorCode, string>(ErrorCode.None, CInfojson);
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, P_Info);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDB.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
-            return new Tuple<ErrorCode, string>(ErrorCode.None, "");
+                $"[GameDB.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, null);
         }
     }
 }

@@ -32,21 +32,17 @@ public class AccountDb : IAccountDb
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
     }
 
-    public void Dispose()
-    {
-        AccountDBClose();
-    }
 
-    public async Task<ErrorCode> CreateAccountAsync(String id, String pw)
+    public async Task<ErrorCode> CreateAccountAsync(String AccountId, String pw)
     {
         try
         {
             _logger.ZLogDebug(
-                $"[CreateAccount] ID: {id}, Password: {pw}");
+                $"[CreateAccount] ID: {AccountId}, Password: {pw}");
 
             var count = await _queryFactory.Query("account").InsertAsync(new
             {
-                ID = id,
+                ID = AccountId,
                 Password = pw
             });
 
@@ -60,50 +56,50 @@ public class AccountDb : IAccountDb
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[AccountDb.CreateAccount] ErrorCode: {ErrorCode.CreateAccountFailException}, ID: {id}");
+                $"[AccountDb.CreateAccount] ErrorCode: {ErrorCode.CreateAccountFailException}, ID: {AccountId}");
             return ErrorCode.CreateAccountFailException;
         }
     }
 
-    public async Task<Tuple<ErrorCode, Int64>> VerifyAccount(String id, String pw)
+    public async Task<ErrorCode> VerifyAccount(String AccountId, String pw)
     {
         try
         {
             // 존재하는 계정인지 체크
-            var accountInfo = await _queryFactory.Query("account").Where("ID", id).FirstOrDefaultAsync<Account>();
+            var accountInfo = await _queryFactory.Query("account").Where("ID", AccountId).FirstOrDefaultAsync<Account>();
 
             if (accountInfo is null)
             {
-                return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailUserNotExist, 0);
+                return ErrorCode.LoginFailUserNotExist;
             }
             if (accountInfo.Password != pw)
             {
                 _logger.ZLogError(
-                    $"[AccountDb.VerifyAccount] ErrorCode: {ErrorCode.LoginFailPwNotMatch}, ID: {id}");
-                return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailPwNotMatch, 0);
+                    $"[AccountDb.VerifyAccount] ErrorCode: {ErrorCode.LoginFailPwNotMatch}, ID: {AccountId}");
+                return ErrorCode.LoginFailPwNotMatch;
             }
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountInfo.AccountId);
+            return ErrorCode.None;
         }
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[AccountDb.VerifyAccount] ErrorCode: {ErrorCode.LoginFailException}, ID:  {id}");
-            return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailException, 0);
+                $"[AccountDb.VerifyAccount] ErrorCode: {ErrorCode.LoginFailException}, ID:  {AccountId}");
+            return ErrorCode.LoginFailException;
         }
     }
 
-    public async Task<ErrorCode> DeleteAccountAsync(String id)
+    public async Task<ErrorCode> DeleteAccountAsync(String AccountId)
     {
         try
         {
             _logger.ZLogDebug(
-                $"[DeleteAccount] ID: {id}");
+                $"[DeleteAccount] ID: {AccountId}");
 
             var count = await _queryFactory.Query("account").Where(
                 "ID",
                 "=",
-                id
+                AccountId
             ).DeleteAsync();
 
             if (count != 1)
@@ -116,7 +112,7 @@ public class AccountDb : IAccountDb
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[AccountDb.DeleteAccount] ErrorCode: {ErrorCode.CreateAccountFailException}, ID: {id}");
+                $"[AccountDb.DeleteAccount] ErrorCode: {ErrorCode.CreateAccountFailException}, ID: {AccountId}");
             return ErrorCode.CreateAccountFailException;
         }
     }
@@ -132,5 +128,10 @@ public class AccountDb : IAccountDb
     private void AccountDBClose()
     {
         _dbConn.Close();
+    }
+
+    public void Dispose()
+    {
+        AccountDBClose();
     }
 }

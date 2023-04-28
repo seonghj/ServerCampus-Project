@@ -24,7 +24,6 @@ SettingLogger();
 
 var app = builder.Build();
 
-
 //log setting
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 LogManager.SetLoggerFactory(loggerFactory, "Global");
@@ -36,8 +35,6 @@ app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
 
 app.Run(configuration["ServerAddress"]);
-
-
 
 void SettingLogger()
 {
