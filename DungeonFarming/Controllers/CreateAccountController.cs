@@ -40,6 +40,8 @@ public class CreateAccount : ControllerBase
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
+            // 임시
+            await _accountDb.DeleteAccountAsync(request.ID);
             return response;
         }
 

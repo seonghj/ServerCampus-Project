@@ -93,6 +93,34 @@ public class AccountDb : IAccountDb
         }
     }
 
+    public async Task<ErrorCode> DeleteAccountAsync(String id)
+    {
+        try
+        {
+            _logger.ZLogDebug(
+                $"[DeleteAccount] ID: {id}");
+
+            var count = await _queryFactory.Query("account").Where(
+                "ID",
+                "=",
+                id
+            ).DeleteAsync();
+
+            if (count != 1)
+            {
+                return ErrorCode.CreateAccountFailInsert;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            _logger.ZLogError(e,
+                $"[AccountDb.DeleteAccount] ErrorCode: {ErrorCode.CreateAccountFailException}, ID: {id}");
+            return ErrorCode.CreateAccountFailException;
+        }
+    }
+
 
     private void AccountDBOpen()
     {
