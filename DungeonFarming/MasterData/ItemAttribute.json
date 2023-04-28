@@ -1,0 +1,17 @@
+{
+  "1": {
+    "Name": "Weapon"
+  },
+  "2": {
+    "Name": "Armor"
+  },
+  "3": {
+    "Name": "Costume"
+  },
+  "4": {
+    "Name": "MagicTool"
+  },
+  "5": {
+    "Name": "Money"
+  }
+}

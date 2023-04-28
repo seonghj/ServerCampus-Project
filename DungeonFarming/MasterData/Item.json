@@ -1,0 +1,74 @@
+{
+  "1": {
+    "Name": "Money",
+    "Attribute": "5",
+    "Sell": 0,
+    "Buy": 0,
+    "UseLv": 0,
+    "Attack": 0,
+    "Defence": 0,
+    "Magic": 0,
+    "EnhanceMaxCount": 0,
+    "OverlappingPossible": true
+  },
+  "2": {
+    "Name": "Knife",
+    "Attribute": "1",
+    "Sell": 10,
+    "Buy": 0,
+    "UseLv": 0,
+    "Attack": 10,
+    "Defence": 5,
+    "Magic": 1,
+    "EnhanceMaxCount": 10,
+    "OverlappingPossible": false
+  },
+  "3": {
+    "Name": "Plated Knife",
+    "Attribute": "1",
+    "Sell": 100,
+    "Buy": 200,
+    "UseLv": 5,
+    "Attack": 29,
+    "Defence": 12,
+    "Magic": 10,
+    "EnhanceMaxCount": 10,
+    "OverlappingPossible": false
+  },
+  "4": {
+    "Name": "Wooden Shield",
+    "Attribute": "2",
+    "Sell": 7,
+    "Buy": 15,
+    "UseLv": 1,
+    "Attack": 3,
+    "Defence": 10,
+    "Magic": 1,
+    "EnhanceMaxCount": 10,
+    "OverlappingPossible": false
+  },
+  "5": {
+    "Name": "Common Hat",
+    "Attribute": "3",
+    "Sell": 5,
+    "Buy": 8,
+    "UseLv": 1,
+    "Attack": 1,
+    "Defence": 1,
+    "Magic": 1,
+    "EnhanceMaxCount": 10,
+    "OverlappingPossible": false
+  },
+  "6": {
+    "Name": "Potion",
+    "Attribute": "4",
+    "Sell": 3,
+    "Buy": 6,
+    "UseLv": 1,
+    "Attack": 0,
+    "Defence": 0,
+    "Magic": 0,
+    "EnhanceMaxCount": 0,
+    "OverlappingPossible": true
+  }
+}
