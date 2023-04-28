@@ -86,7 +86,7 @@ public class CharacterDb : ICharacterDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDb.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
+                $"[CharacterDB.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
             return new Tuple<ErrorCode, string>(ErrorCode.None, "");
         }
     }

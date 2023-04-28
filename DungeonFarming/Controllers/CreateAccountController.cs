@@ -17,10 +17,11 @@ public class CreateAccount : ControllerBase
     private readonly ICharacterDb _characterDb;
     private readonly ILogger<CreateAccount> _logger;
 
-    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb)
+    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, ICharacterDb characterDb)
     {
         _logger = logger;
         _accountDb = accountDb;
+        _characterDb = characterDb; 
     }
 
     [HttpPost]
@@ -29,6 +30,13 @@ public class CreateAccount : ControllerBase
         var response = new PkCreateAccountRes();
 
         var errorCode = await _accountDb.CreateAccountAsync(request.ID, request.Password);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        errorCode = await _characterDb.InsertCharacter(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

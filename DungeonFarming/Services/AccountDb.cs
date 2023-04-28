@@ -16,9 +16,9 @@ public class AccountDb : IAccountDb
     readonly IOptions<DbConfig> _dbConfig;
     readonly ILogger<AccountDb> _logger;
 
-    IDbConnection _accountdbConn, _chardbConn;
+    IDbConnection _dbConn;
     SqlKata.Compilers.MySqlCompiler _compiler;
-    QueryFactory _queryFactory1, _queryFactory2;
+    QueryFactory _queryFactory;
 
 
     public AccountDb(ILogger<AccountDb> logger, IOptions<DbConfig> dbConfig)
@@ -27,11 +27,9 @@ public class AccountDb : IAccountDb
         _logger = logger;
 
         AccountDBOpen();
-        CharacterDBOpen();
 
         _compiler = new SqlKata.Compilers.MySqlCompiler();
-        _queryFactory1 = new SqlKata.Execution.QueryFactory(_accountdbConn, _compiler);
-        _queryFactory2 = new SqlKata.Execution.QueryFactory(_chardbConn, _compiler);
+        _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
     }
 
     public void Dispose()
@@ -46,28 +44,15 @@ public class AccountDb : IAccountDb
             _logger.ZLogDebug(
                 $"[CreateAccount] ID: {id}, Password: {pw}");
 
-            var count = await _queryFactory1.Query("account").InsertAsync(new {
-                                                                    ID = id,
-                                                                    Password = pw                
-            });            
-            
-            if(count != 1)
-            {
-                return ErrorCode.CreateAccountFailInsert;
-            }
-            count = await _queryFactory2.Query("charinfo").InsertAsync(new
+            var count = await _queryFactory.Query("account").InsertAsync(new
             {
                 ID = id,
-                Level = 1,
-                Exp = 100,
-                Hp = 50,
-                Mp = 60,
-                Gold = 10000,
-                LastStage = 0
+                Password = pw
             });
+
             if (count != 1)
             {
-                return ErrorCode.CreateCharacterFailException;
+                return ErrorCode.CreateAccountFailInsert;
             }
 
             return ErrorCode.None;
@@ -85,7 +70,7 @@ public class AccountDb : IAccountDb
         try
         {
             // 존재하는 계정인지 체크
-            var accountInfo = await _queryFactory1.Query("account").Where("ID", id).FirstOrDefaultAsync<Account>();
+            var accountInfo = await _queryFactory.Query("account").Where("ID", id).FirstOrDefaultAsync<Account>();
 
             if (accountInfo is null)
             {
@@ -111,33 +96,13 @@ public class AccountDb : IAccountDb
 
     private void AccountDBOpen()
     {
-        _accountdbConn = new MySqlConnection(_dbConfig.Value.AccountDb);
+        _dbConn = new MySqlConnection(_dbConfig.Value.AccountDb);
 
-        _accountdbConn.Open();
+        _dbConn.Open();
     }
 
     private void AccountDBClose()
     {
-        _accountdbConn.Close();
+        _dbConn.Close();
     }
-
-    private void CharacterDBOpen()
-    {
-        _chardbConn = new MySqlConnection(_dbConfig.Value.CharacterDb);
-
-        _chardbConn.Open();
-    }
-
-    private void CharacterDBClose()
-    {
-        _chardbConn.Close();
-    }
-}
-
-public class DbConfig
-{
-    public String MasterDb { get; set; }
-    public String AccountDb { get; set; }
-    public String CharacterDb { get; set; }
-    public String Memcached { get; set; }
 }
