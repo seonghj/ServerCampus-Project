@@ -14,14 +14,14 @@ namespace DungeonFarming.Controllers;
 public class Login : ControllerBase
 {
     readonly IAccountDb _accountDb;
-    readonly ICharacterDb _characterDb;
+    readonly IGameDb _gameDb;
     readonly ILogger<Login> _logger;
 
-    public Login(ILogger<Login> logger, IAccountDb accountDb, ICharacterDb characterDb)
+    public Login(ILogger<Login> logger, IAccountDb accountDb, IGameDb gameDb)
     {
         _logger = logger;
         _accountDb = accountDb;
-        _characterDb = characterDb;
+        _gameDb = gameDb;
     }
 
     [HttpPost]
@@ -38,7 +38,7 @@ public class Login : ControllerBase
 
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID}, "Login Success");
 
-        (errorCode, response.CharInfo) = await _characterDb.GetCharacterInfo(request.ID);
+        (errorCode, response.CharInfo) = await _gameDb.GetCharacterInfo(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

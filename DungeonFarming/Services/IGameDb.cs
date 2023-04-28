@@ -5,7 +5,7 @@ using DungeonFarming.ModelReqRes;
 
 namespace DungeonFarming.Services;
 
-public interface ICharacterDb
+public interface IGameDb
 {
 
     public Task<ErrorCode> InsertCharacter(string Id);

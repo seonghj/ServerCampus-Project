@@ -13,21 +13,21 @@ using ZLogger;
 
 namespace DungeonFarming.Services;
 
-public class CharacterDb : ICharacterDb
+public class GameDb : IGameDb
 {
-    readonly ILogger<CharacterDb> _logger;
+    readonly ILogger<GameDb> _logger;
     readonly IOptions<DbConfig> _dbConfig;
 
     IDbConnection _dbConn;
     SqlKata.Compilers.MySqlCompiler _compiler;
     QueryFactory _queryFactory;
 
-    public CharacterDb(ILogger<CharacterDb> logger, IOptions<DbConfig> dbConfig)
+    public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig)
     {
         _dbConfig = dbConfig;
         _logger = logger;
 
-        _dbConn = new MySqlConnection(_dbConfig.Value.CharacterDb);
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
 
         _dbConn.Open();
 
@@ -68,7 +68,7 @@ public class CharacterDb : ICharacterDb
 
     private void Open()
     {
-        _dbConn = new MySqlConnection(_dbConfig.Value.CharacterDb);
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
 
         _dbConn.Open();
     }
@@ -86,7 +86,7 @@ public class CharacterDb : ICharacterDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[CharacterDB.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
+                $"[GameDB.InsertCharacter] ErrorCode : {ErrorCode.CreateCharacterFailException}");
             return new Tuple<ErrorCode, string>(ErrorCode.None, "");
         }
     }

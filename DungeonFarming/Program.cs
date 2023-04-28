@@ -17,7 +17,7 @@ builder.Services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)))
 
 // DI
 builder.Services.AddTransient<IAccountDb, AccountDb>();
-builder.Services.AddTransient<ICharacterDb, CharacterDb>();
+builder.Services.AddTransient<IGameDb, GameDb>();
 builder.Services.AddControllers();
 
 SettingLogger();

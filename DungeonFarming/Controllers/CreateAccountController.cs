@@ -14,14 +14,14 @@ namespace DungeonFarming.Controllers;
 public class CreateAccount : ControllerBase
 {
     private readonly IAccountDb _accountDb;
-    private readonly ICharacterDb _characterDb;
+    private readonly IGameDb _gameDb;
     private readonly ILogger<CreateAccount> _logger;
 
-    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, ICharacterDb characterDb)
+    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, IGameDb gameDb)
     {
         _logger = logger;
         _accountDb = accountDb;
-        _characterDb = characterDb; 
+        _gameDb = gameDb; 
     }
 
     [HttpPost]
@@ -36,7 +36,7 @@ public class CreateAccount : ControllerBase
             return response;
         }
 
-        errorCode = await _characterDb.InsertCharacter(request.ID);
+        errorCode = await _gameDb.InsertCharacter(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
