@@ -15,14 +15,13 @@ public class Login : ControllerBase
 {
     readonly IAccountDb _accountDb;
     readonly ICharacterDb _characterDb;
-    readonly IMemoryDb _memoryDb;
     readonly ILogger<Login> _logger;
 
-    public Login(ILogger<Login> logger, IAccountDb accountDb, IMemoryDb memoryDb)
+    public Login(ILogger<Login> logger, IAccountDb accountDb, ICharacterDb characterDb)
     {
         _logger = logger;
         _accountDb = accountDb;
-        _memoryDb = memoryDb;
+        _characterDb = characterDb;
     }
 
     [HttpPost]
