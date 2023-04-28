@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DungeonFarming.ModelReqRes;
 
-public class PkCreateAccountReq
+public class CreateAccountRequest
 {
     [Required]
     [RegularExpression(@"^[a-zA-Z0-9\s]{1,20}$", ErrorMessage = "ID is not valid")]
@@ -15,7 +15,7 @@ public class PkCreateAccountReq
     public String Password{ get; set; }
 }
 
-public class PkCreateAccountRes
+public class CreateAccountResponse
 {
     public ErrorCode Result { get; set; } = ErrorCode.None;
 }

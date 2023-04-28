@@ -25,9 +25,9 @@ public class Login : ControllerBase
     }
 
     [HttpPost]
-    public async Task<PkLoginResponse> Post(PkLoginRequest request)
+    public async Task<LoginResponse> Post(LoginRequest request)
     {
-        var response = new PkLoginResponse();
+        var response = new LoginResponse();
         // ID, PW 검증
         var errorCode = await _accountDb.VerifyAccount(request.ID, request.Password);
         if (errorCode != ErrorCode.None)

@@ -25,9 +25,9 @@ public class CreateAccount : ControllerBase
     }
 
     [HttpPost]
-    public async Task<PkCreateAccountRes> Post(PkCreateAccountReq request)
+    public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
     {
-        var response = new PkCreateAccountRes();
+        var response = new CreateAccountResponse();
 
         var errorCode = await _accountDb.CreateAccountAsync(request.ID, request.Password);
         if (errorCode != ErrorCode.None)
