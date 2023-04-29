@@ -2,7 +2,7 @@
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using DungeonFarming.ModelDB;
+using DungeonFarming.DBTableFormat;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;

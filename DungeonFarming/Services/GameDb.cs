@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DungeonFarming.ModelDB;
+using DungeonFarming.DBTableFormat;
 using DungeonFarming.ModelReqRes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -1,4 +1,4 @@
-﻿using DungeonFarming.ModelDB;
+﻿using DungeonFarming.DBTableFormat;
 using System;
 using System.ComponentModel.DataAnnotations;
 

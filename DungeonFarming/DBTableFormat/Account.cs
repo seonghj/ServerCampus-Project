@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DungeonFarming.ModelDB;
+namespace DungeonFarming.DBTableFormat;
 
 public class Account
 {

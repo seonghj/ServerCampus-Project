@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace DungeonFarming.ModelDB;
+namespace DungeonFarming.DBTableFormat;
 
 public class PlayerInfo
 { 

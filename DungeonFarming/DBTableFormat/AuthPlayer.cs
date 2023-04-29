@@ -1,4 +1,4 @@
-﻿namespace DungeonFarming.ModelDB;
+﻿namespace DungeonFarming.DBTableFormat;
 
 public class AuthPlayer
 {

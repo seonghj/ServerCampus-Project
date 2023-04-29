@@ -1,4 +1,4 @@
-﻿using DungeonFarming.ModelDB;
+﻿using DungeonFarming.DBTableFormat;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
