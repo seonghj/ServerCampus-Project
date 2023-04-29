@@ -15,13 +15,15 @@ public class CreateAccount : ControllerBase
 {
     private readonly IAccountDb _accountDb;
     private readonly IGameDb _gameDb;
+
     private readonly ILogger<CreateAccount> _logger;
 
-    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, IGameDb gameDb)
+    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb
+        , IGameDb gameDb)
     {
         _logger = logger;
         _accountDb = accountDb;
-        _gameDb = gameDb; 
+        _gameDb = gameDb;
     }
 
     [HttpPost]
@@ -40,7 +42,6 @@ public class CreateAccount : ControllerBase
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
-            // 임시
             await _accountDb.DeleteAccountAsync(request.ID);
             return response;
         }

@@ -18,7 +18,7 @@ public class LoginRequest
 public class LoginResponse
 {
     [Required] public ErrorCode Result { get; set; } = ErrorCode.None;
-    [Required] public String AuthToken { get; set; } = "";
+    [Required] public AuthPlayer P_Auth { get; set; } = null;
 
     [Required]
     public PlayerInfo P_Info { get; set; } = null;
