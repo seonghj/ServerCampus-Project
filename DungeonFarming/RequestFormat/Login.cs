@@ -1,9 +1,9 @@
-﻿using System;
+﻿using DungeonFarming.DBTableFormat;
+using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace DungeonFarming.ModelReqRes;
-
-public class CreateAccountRequest
+namespace DungeonFarming.RequestFormat;
+public class LoginRequest
 {
     [Required]
     [RegularExpression(@"^[a-zA-Z0-9\s]{1,20}$", ErrorMessage = "ID is not valid")]
@@ -12,10 +12,5 @@ public class CreateAccountRequest
     [Required]
     [MinLength(1, ErrorMessage = "PASSWORD CANNOT BE EMPTY")]
     [StringLength(20, ErrorMessage = "PASSWORD IS TOO LONG")]
-    public String Password{ get; set; }
-}
-
-public class CreateAccountResponse
-{
-    public ErrorCode Result { get; set; } = ErrorCode.None;
+    public String Password { get; set; }
 }

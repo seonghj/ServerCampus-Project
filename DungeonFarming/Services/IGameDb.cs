@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DungeonFarming.DBTableFormat;
-using DungeonFarming.ModelReqRes;
+using DungeonFarming.RequestFormat;
+using DungeonFarming.ResponseFormat;
 
 namespace DungeonFarming.Services;
 
