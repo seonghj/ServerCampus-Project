@@ -61,5 +61,8 @@ public enum ErrorCode : UInt16
     GetPlayerListFail = 3014,
 
     //GameDb 4000~ 
-    GetGameDbConnectionFail = 4002
+    GetGameDbConnectionFail = 4002,
+
+    //Redis 5000-
+    RedisDbConnectionFail = 5002
 }

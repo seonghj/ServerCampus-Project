@@ -11,4 +11,5 @@ public interface IRedisDb
 
     public Task<Tuple<ErrorCode, AuthPlayer>> GetPlayerAuthAsync(string accountid);
 
+    public Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
 }

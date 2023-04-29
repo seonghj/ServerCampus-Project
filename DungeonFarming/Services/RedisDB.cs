@@ -50,7 +50,7 @@ public class RedisDb : IRedisDb
         {
             s_logger.ZLogError(EventIdDic[EventType.LoginAddRedis],
                    $"ID:{accountid}, AuthToken:{AuthKey},ErrorMessage:Redis Connection Error");
-            return ErrorCode.LoginFailAddRedis;
+            return ErrorCode.RedisDbConnectionFail;
         }
         return ErrorCode.None;
     }
@@ -67,13 +67,41 @@ public class RedisDb : IRedisDb
                    $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
                 return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.LoginFailAddRedis, null);
             }
-            return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.LoginFailAddRedis, result.Value);
+            return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.None, result.Value);
         }
         catch
         {
             s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: ID Not Exist");
             return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.LoginFailAddRedis, null);
+        }
+    }
+
+    public async Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken)
+    {
+        try
+        {
+            var redis = new RedisString<AuthPlayer>(_redisConn, accountid, null);
+            var result = await redis.GetAsync();
+            if (!result.HasValue)
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
+                return new Tuple<ErrorCode, bool>(ErrorCode.AuthTokenNotFound, false);
+            }
+            if (result.Value.AuthToken != playerAuthToken)
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
+                return new Tuple<ErrorCode, bool>(ErrorCode.AuthTokenMismatch, false);
+            }
+            return new Tuple<ErrorCode, bool>(ErrorCode.None, true);
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Redis Connection Error");
+            return new Tuple<ErrorCode, bool>(ErrorCode.RedisDbConnectionFail, false);
         }
     }
 }
