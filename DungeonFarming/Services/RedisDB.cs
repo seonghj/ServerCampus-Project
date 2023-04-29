@@ -6,6 +6,7 @@ using CloudStructures;
 using CloudStructures.Structures;
 using ZLogger;
 using static LogManager;
+using Microsoft.Extensions.Options;
 
 namespace DungeonFarming.Services;
 
@@ -13,13 +14,15 @@ public class RedisDb : IRedisDb
 {
     public RedisConnection _redisConn;
     private static readonly ILogger<RedisDb> s_logger = GetLogger<RedisDb>();
+    readonly IOptions<DbConfig> _dbConfig;
 
-    public void Init(string address)
+    public RedisDb(IOptions<DbConfig> dbConfig)
     {
-        var config = new RedisConfig("default", address);
+        _dbConfig = dbConfig;
+        var config = new RedisConfig("default", _dbConfig.Value.Redis);
         _redisConn = new RedisConnection(config);
 
-        s_logger.ZLogDebug($"userDbAddress:{address}");
+        s_logger.ZLogDebug($"userDbAddress:{dbConfig.Value.Redis}");
     }
 
     public async Task<ErrorCode> CreatePlayerAuthAsync(string accountid)
