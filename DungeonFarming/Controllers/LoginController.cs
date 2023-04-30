@@ -40,8 +40,6 @@ public class Login : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID}, "Login Success");
-
         (errorCode, response.P_Info) = await _gameDb.GetPlayerInfo(request.ID);
         if (errorCode != ErrorCode.None)
         {
@@ -62,6 +60,7 @@ public class Login : ControllerBase
             return response;
         }
 
+        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID }, "Login Success");
         return response;
     }
 

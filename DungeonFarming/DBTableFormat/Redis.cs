@@ -11,3 +11,8 @@ public enum PlayerState
     Default = 0,
     Login = 1,
 }
+public class NoticeContent
+{
+    public string title = "";
+    public string Content = "";
+}

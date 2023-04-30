@@ -1,4 +1,5 @@
 ﻿using DungeonFarming.DBTableFormat;
+using DungeonFarming.ResponseFormat;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
@@ -12,4 +13,6 @@ public interface IRedisDb
     public Task<Tuple<ErrorCode, AuthPlayer>> GetPlayerAuthAsync(string accountid);
 
     public Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
+
+    public Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey);
 }

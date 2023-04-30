@@ -7,6 +7,8 @@ using CloudStructures.Structures;
 using ZLogger;
 using static LogManager;
 using Microsoft.Extensions.Options;
+using DungeonFarming.ResponseFormat;
+using static Humanizer.In;
 
 namespace DungeonFarming.Services;
 
@@ -102,6 +104,41 @@ public class RedisDb : IRedisDb
             s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: Redis Connection Error");
             return new Tuple<ErrorCode, bool>(ErrorCode.RedisDbConnectionFail, false);
+        }
+    }
+
+    public async Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey)
+    {
+
+        try
+        {
+            var redis = new RedisDictionary<string, string>(_redisConn, NotificationKey, null);
+            var result = await redis.GetAllAsync();
+            if (result.Count == 0)
+            {
+                s_logger.ZLogError(
+                   $"ErrorMessage: Can Not Get Notification, RedisString Get Error");
+                return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.AuthTokenNotFound, null);
+            }
+            List<NoticeContent> NoticeList = new List<NoticeContent>();
+            foreach (var item in result)
+            {
+                NoticeList.Add(new NoticeContent
+                {
+                    title = item.Key,
+                    Content = item.Value
+                    
+                });
+            }
+
+            return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.None, NoticeList);
+            //return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.None, null);
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                   $"ErrorMessage: Redis Connection Error");
+            return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.RedisDbConnectionFail, null);
         }
     }
 }

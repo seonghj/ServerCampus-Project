@@ -4,13 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DungeonFarming.ResponseFormat;
 
-public class LoginResponse
+public class NotificationResponse
 {
-    [Required] 
+    [Required]
     public ErrorCode Result { get; set; } = ErrorCode.None;
-    [Required] 
-    public AuthPlayer P_Auth { get; set; }
 
     [Required]
-    public PlayerInfo P_Info { get; set; } = null;
+    public List<NoticeContent> NotificationList { get; set; } = null;
 }
