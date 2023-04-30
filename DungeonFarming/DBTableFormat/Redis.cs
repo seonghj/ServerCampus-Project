@@ -13,6 +13,6 @@ public enum PlayerState
 }
 public class NoticeContent
 {
-    public string title = "";
-    public string Content = "";
+    public string title { get; set; } = "";
+    public string Content { get; set; } = "";
 }

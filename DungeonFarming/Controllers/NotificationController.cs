@@ -6,6 +6,7 @@ using DungeonFarming.ResponseFormat;
 using DungeonFarming.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
 
@@ -15,21 +16,23 @@ namespace DungeonFarming.Controllers;
 [Route("[controller]")]
 public class Notification : ControllerBase
 {
-    readonly IAccountDb _accountDb;
     private readonly IRedisDb _redisDb;
-    readonly ILogger<Login> _logger;
+    readonly ILogger<Notification> _logger;
+    readonly IOptions<RedisHashKeys> _hashkey;
 
-    public Notification(ILogger<Login> logger, IAccountDb accountDb, IRedisDb redisDb)
+    public Notification(ILogger<Notification> logger, IAccountDb accountDb
+        , IRedisDb redisDb, IOptions<RedisHashKeys> redisHashKeys)
     {
         _logger = logger;
-        _accountDb = accountDb;
         _redisDb = redisDb;
+        _hashkey = redisHashKeys;
     }
 
     [HttpPost]
     public async Task<NotificationResponse> Post(NotificationRequest request)
     {
         var response = new NotificationResponse();
+        var NotificationKey = _hashkey.Value.Notification;
 
         (var errorCode, var CheckAuthResult) = await _redisDb.CheckPlayerAuthAsync(request.AccountID, request.AuthToken);
         if (errorCode != ErrorCode.None)
@@ -42,13 +45,12 @@ public class Notification : ControllerBase
             response.Result = ErrorCode.AuthTokenNotFound;
             return response;
         }
-        (errorCode, response.NotificationList) = await _redisDb.GetNotificationAsync("notice");
+        (errorCode, response.NotificationList) = await _redisDb.GetNotificationAsync(NotificationKey);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
-
 
         _logger.ZLogInformationWithPayload(new { ID = request.AccountID }, "Send Notification Success");
         return response;

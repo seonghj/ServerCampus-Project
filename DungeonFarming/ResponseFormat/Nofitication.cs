@@ -10,5 +10,5 @@ public class NotificationResponse
     public ErrorCode Result { get; set; } = ErrorCode.None;
 
     [Required]
-    public List<NoticeContent> NotificationList { get; set; } = null;
+    public List<NoticeContent> NotificationList { get; set; }
 }

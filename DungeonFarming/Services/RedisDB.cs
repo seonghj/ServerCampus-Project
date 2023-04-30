@@ -120,7 +120,7 @@ public class RedisDb : IRedisDb
                    $"ErrorMessage: Can Not Get Notification, RedisString Get Error");
                 return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.AuthTokenNotFound, null);
             }
-            List<NoticeContent> NoticeList = new List<NoticeContent>();
+            var NoticeList = new List<NoticeContent>();
             foreach (var item in result)
             {
                 NoticeList.Add(new NoticeContent
@@ -132,7 +132,6 @@ public class RedisDb : IRedisDb
             }
 
             return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.None, NoticeList);
-            //return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.None, null);
         }
         catch
         {
