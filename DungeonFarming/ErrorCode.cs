@@ -10,6 +10,7 @@ public enum ErrorCode : UInt16
     RedisFailException = 1002,
     InValidRequestHttpBody = 1003,
     AuthTokenFailWrongAuthToken = 1006,
+    ClinetVersionNotMatch = 1007,
 
     // Account 2000 ~
     CreateAccountFailException = 2001,    

@@ -15,6 +15,7 @@ IConfiguration configuration = builder.Configuration;
 
 builder.Services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
 builder.Services.Configure<RedisHashKeys>(configuration.GetSection(nameof(RedisHashKeys)));
+builder.Services.Configure<Versions>(configuration.GetSection(nameof(Versions)));
 
 builder.Services.AddTransient<IAccountDb, AccountDb>();
 builder.Services.AddTransient<IGameDb, GameDb>();
