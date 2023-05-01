@@ -49,7 +49,7 @@ public class Login : ControllerBase
             return response;
         }
 
-        errorCode = await _redisDb.CreatePlayerAuthAsync(request.ID);
+        errorCode = await _redisDb.InsertPlayerAuthAsync(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

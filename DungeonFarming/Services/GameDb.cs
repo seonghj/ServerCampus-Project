@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
+using DungeonFarming.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
@@ -36,7 +37,7 @@ public class GameDb : IGameDb
 
     public async Task<ErrorCode> InsertPlayer(string AccountId)
     {
-        var uid = DateTime.Now.ToString("MMddyyyyhhmmss");
+        var uid = Security.Security.CreateUID();
         try
         {
             var PlayerId = await _queryFactory.Query("Playerinfo").InsertGetIdAsync<int>(new

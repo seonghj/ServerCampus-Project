@@ -1,4 +1,5 @@
 ﻿using DungeonFarming.DBTableFormat;
+using DungeonFarming.Security;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System;
@@ -28,9 +29,9 @@ public class RedisDb : IRedisDb
     }
 
     // 인증키
-    public async Task<ErrorCode> CreatePlayerAuthAsync(string accountid)
+    public async Task<ErrorCode> InsertPlayerAuthAsync(string accountid)
     {
-        var AuthKey = DateTime.Now.ToString("MMddyyyy") + accountid;
+        var AuthKey = Security.Security.CreatePlayerAuth(accountid);
         try
         {
             var defaultExpiry = TimeSpan.FromDays(1);
