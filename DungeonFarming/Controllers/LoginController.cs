@@ -55,14 +55,14 @@ public class Login : ControllerBase
             response.Result = errorCode;
             return response;
         }
-        (errorCode, response.P_Auth) = await _redisDb.GetPlayerAuthAsync(request.ID);
+        (errorCode, response.PlayerAuth) = await _redisDb.GetPlayerAuthAsync(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        (errorCode, response.P_Info) = await _gameDb.GetPlayerInfo(request.ID);
+        (errorCode, response.PlayerInfomation) = await _gameDb.GetPlayerInfo(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

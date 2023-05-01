@@ -91,9 +91,9 @@ public class GameDb : IGameDb
     {
         try
         {
-            var P_Info = await _queryFactory.Query("playerinfo").Where("AccountID", AccountId).FirstOrDefaultAsync<PlayerInfo>();
+            var PlayerInfomation = await _queryFactory.Query("playerinfo").Where("AccountID", AccountId).FirstOrDefaultAsync<PlayerInfo>();
 
-            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, P_Info);
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, PlayerInfomation);
         }
         catch (Exception ex)
         {

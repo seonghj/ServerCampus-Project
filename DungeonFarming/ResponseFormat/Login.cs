@@ -9,8 +9,8 @@ public class LoginResponse
     [Required] 
     public ErrorCode Result { get; set; } = ErrorCode.None;
     [Required] 
-    public AuthPlayer P_Auth { get; set; }
+    public AuthPlayer PlayerAuth { get; set; }
 
     [Required]
-    public PlayerInfo P_Info { get; set; } = null;
+    public PlayerInfo PlayerInfomation { get; set; } = null;
 }
