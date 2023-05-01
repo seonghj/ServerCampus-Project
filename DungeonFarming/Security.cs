@@ -39,6 +39,6 @@ public class Security
 
     public static string CreateUID()
     {
-        return DateTime.Now.ToString("MMddyyyyhhmmss");
+        return DateTime.Now.ToString("MMssddmmyyyyhh");
     }
 }
