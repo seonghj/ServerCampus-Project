@@ -117,7 +117,7 @@ public class RedisDb : IRedisDb
             if (result.Count == 0)
             {
                 s_logger.ZLogError(
-                   $"ErrorMessage: Can Not Get Notification, RedisString Get Error");
+                   $"ErrorMessage: Can Not Get Notification, RedisDictionary Get Error");
                 return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.AuthTokenNotFound, null);
             }
             var NoticeList = new List<NoticeContent>();
@@ -138,6 +138,29 @@ public class RedisDb : IRedisDb
             s_logger.ZLogError(
                    $"ErrorMessage: Redis Connection Error");
             return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.RedisDbConnectionFail, null);
+        }
+    }
+
+    public async Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content)
+    {
+        try
+        {
+            var redis = new RedisDictionary<string, string>(_redisConn, NotificationKey, null);
+            var result = await redis.SetAsync(title, Content);
+            if (!result)
+            {
+                s_logger.ZLogError(
+                   $"ErrorMessage: Can Not Set Notification, RedisDictionary Set Error");
+                return ErrorCode.AuthTokenNotFound;
+            }
+            
+            return ErrorCode.None;
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                   $"ErrorMessage: Redis Connection Error");
+            return ErrorCode.RedisDbConnectionFail;
         }
     }
 }

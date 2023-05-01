@@ -12,3 +12,9 @@ public class NotificationResponse
     [Required]
     public List<NoticeContent> NotificationList { get; set; }
 }
+
+public class AddNotificationResponse
+{
+    [Required]
+    public ErrorCode Result { get; set; } = ErrorCode.None;
+}

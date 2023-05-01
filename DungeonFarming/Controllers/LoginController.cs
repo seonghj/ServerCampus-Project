@@ -40,13 +40,6 @@ public class Login : ControllerBase
             return response;
         }
 
-        (errorCode, response.P_Info) = await _gameDb.GetPlayerInfo(request.ID);
-        if (errorCode != ErrorCode.None)
-        {
-            response.Result = errorCode;
-            return response;
-        }
-
         errorCode = await _redisDb.CreatePlayerAuthAsync(request.ID);
         if (errorCode != ErrorCode.None)
         {
@@ -54,6 +47,13 @@ public class Login : ControllerBase
             return response;
         }
         (errorCode, response.P_Auth) = await _redisDb.GetPlayerAuthAsync(request.ID);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        (errorCode, response.P_Info) = await _gameDb.GetPlayerInfo(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

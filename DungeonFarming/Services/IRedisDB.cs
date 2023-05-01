@@ -15,4 +15,6 @@ public interface IRedisDb
     public Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
 
     public Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey);
+
+    public Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content);
 }
