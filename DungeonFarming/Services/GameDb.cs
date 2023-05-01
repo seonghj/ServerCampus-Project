@@ -36,17 +36,19 @@ public class GameDb : IGameDb
 
     public async Task<ErrorCode> InsertPlayer(string AccountId)
     {
+        var uid = DateTime.Now.ToString("MMddyyyyhhmmss");
         try
         {
             var PlayerId = await _queryFactory.Query("Playerinfo").InsertGetIdAsync<int>(new
             {
                 AccountID = AccountId,
+                UID = uid,
                 Level = 1,
                 Exp = 100,
                 Hp = 50,
                 Mp = 60,
                 Gold = 10000,
-                LastStage = 0
+                LastClearStage = 0
             });
 
             return ErrorCode.None;

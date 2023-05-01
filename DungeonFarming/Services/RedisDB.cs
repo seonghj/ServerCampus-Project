@@ -27,6 +27,7 @@ public class RedisDb : IRedisDb
         s_logger.ZLogDebug($"userDbAddress:{dbConfig.Value.Redis}");
     }
 
+    // 인증키
     public async Task<ErrorCode> CreatePlayerAuthAsync(string accountid)
     {
         var AuthKey = DateTime.Now.ToString("MMddyyyy") + accountid;
@@ -107,6 +108,7 @@ public class RedisDb : IRedisDb
         }
     }
 
+    // 공지
     public async Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey)
     {
 

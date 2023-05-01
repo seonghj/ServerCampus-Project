@@ -7,6 +7,8 @@ public class PlayerInfo
 { 
     public string AccountID { get; set; }
 
+    public string UID { get; set; }
+
     public Int32 Level { get; set; }
 
     public Int32 Exp { get; set; }
@@ -18,5 +20,5 @@ public class PlayerInfo
 
     public Int32 Gold { get; set; }
 
-    public Int32 LastStage { get; set; }
+    public Int32 LastClearStage { get; set; }
 }
