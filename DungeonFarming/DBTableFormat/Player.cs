@@ -22,3 +22,10 @@ public class PlayerInfo
 
     public Int32 LastClearStage { get; set; }
 }
+
+public class PlayerItem
+{
+    public string UID { get; set; }
+    public string ItemCode { get; set; }
+    public string ItemUniqueID { get; set; }
+}

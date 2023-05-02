@@ -102,4 +102,20 @@ public class GameDb : IGameDb
             return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, null);
         }
     }
+
+    public async Task<Tuple<ErrorCode, PlayerItem>> GetPlayerItem(string uid)
+    {
+        try
+        {
+            var PlayerItems = await _queryFactory.Query("playerItem").Where("UID", uid).FirstOrDefaultAsync<PlayerItem>();
+
+            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, PlayerItems);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                $"[GameDB.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
+            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, null);
+        }
+    }
 }
