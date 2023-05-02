@@ -103,19 +103,31 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<Tuple<ErrorCode, PlayerItem>> GetPlayerItem(string uid)
+    public async Task<Tuple<ErrorCode, List<PlayerItem>>> GetPlayerItem(string uid)
     {
         try
         {
-            var PlayerItems = await _queryFactory.Query("playerItem").Where("UID", uid).FirstOrDefaultAsync<PlayerItem>();
+            var PlayerItems = await _queryFactory.Query("playerItem").Where("UID", uid).GetAsync<PlayerItem>();
+            List<PlayerItem> ItemList = new List<PlayerItem>();
 
-            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, PlayerItems);
+            foreach (var item in PlayerItems)
+            {
+                ItemList.Add(new PlayerItem
+                {
+                    UID = item.UID,
+                    ItemCode = item.ItemCode,
+                    ItemUniqueID = item.ItemUniqueID
+
+                });
+            }
+
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
                 $"[GameDB.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
-            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, null);
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, null);
         }
     }
 }

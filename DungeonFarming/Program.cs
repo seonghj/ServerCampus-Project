@@ -52,6 +52,7 @@ void SettingLogger()
         Directory.CreateDirectory(fileDir);
     }
 
+
     logging.AddZLoggerRollingFile(
         (dt, x) => $"{fileDir}{dt.ToLocalTime():yyyy-MM-dd}_{x:000}.log",
         x => x.ToLocalTime().Date, 1024,

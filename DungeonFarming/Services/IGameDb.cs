@@ -14,5 +14,6 @@ public interface IGameDb
 
     public Task<ErrorCode> InsertPlayerItem(string UID);
 
-    public Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfo(string AccountId); 
+    public Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfo(string AccountId);
+    public Task<Tuple<ErrorCode, List<PlayerItem>>> GetPlayerItem(string AccountId); 
 }

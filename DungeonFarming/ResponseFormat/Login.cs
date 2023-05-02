@@ -13,4 +13,6 @@ public class LoginResponse
 
     [Required]
     public PlayerInfo PlayerInfomation { get; set; } = null;
+
+    public List<PlayerItem> PlayerItems { get; set; } = null;
 }

@@ -69,6 +69,13 @@ public class Login : ControllerBase
             return response;
         }
 
+        (errorCode, response.PlayerItems) = await _gameDb.GetPlayerItem(request.ID);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID }, "Login Success");
         return response;
     }
