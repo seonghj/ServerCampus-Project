@@ -61,8 +61,12 @@ public enum ErrorCode : UInt16
     PlayerIsExistGame = 3013,
     GetPlayerListFail = 3014,
 
+    InsertPlayerItemFail = 3015,
+
     //GameDb 4000~ 
     GetGameDbConnectionFail = 4002,
+    SetMailFail = 4010,
+    GetMailFail = 4011,
 
     //Redis 5000-
     RedisDbConnectionFail = 5002

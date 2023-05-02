@@ -2,14 +2,17 @@
 
 public class Mail
 {
-    public string mailCode { get; set; }
-    public string title { get; set; }
-    public string content { get; set; }
-    public string expirationPeriod { get; set; }
+    public string UID { get; set; }
+    public string MailCode { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    public string ExpirationPeriod { get; set; }
+    public bool Read { get; set; }
 }
 
 public class MailData
 {
-    public string mailCode { get; set; }
-    public List<PlayerItem> items { get; set; }
+    public string UID { get; set; }
+    public string MailCode { get; set; }
+    public List<PlayerItem> Items { get; set; }
 }

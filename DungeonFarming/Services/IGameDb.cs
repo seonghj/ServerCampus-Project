@@ -10,12 +10,12 @@ namespace DungeonFarming.Services;
 public interface IGameDb
 {
 
-    public Task<ErrorCode> InsertPlayer(string AccountId);
+    public Task<(ErrorCode, string)> InsertPlayer(string AccountId);
 
-    public Task<ErrorCode> InsertPlayerItem(string UID);
+    public Task<ErrorCode> InsertPlayerItem(string UID, PlayerItem item);
 
     public Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfo(string AccountId);
     public Task<Tuple<ErrorCode, List<PlayerItem>>> GetPlayerItem(string AccountId);
 
-    public Task<ErrorCode> SetMailAsync();
+    public Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page);
 }

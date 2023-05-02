@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CloudStructures.Structures;
@@ -36,12 +37,12 @@ public class GameDb : IGameDb
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
     }
 
-    public async Task<ErrorCode> InsertPlayer(string AccountId)
+    public async Task<(ErrorCode, string)> InsertPlayer(string AccountId)
     {
         var uid = Security.Security.CreateUID();
         try
         {
-            var PlayerId = await _queryFactory.Query("Playerinfo").InsertGetIdAsync<int>(new
+            var Result = await _queryFactory.Query("Playerinfo").InsertAsync(new
             {
                 AccountID = AccountId,
                 UID = uid,
@@ -53,20 +54,33 @@ public class GameDb : IGameDb
                 LastClearStage = 0
             });
 
-            return ErrorCode.None;
+            return (ErrorCode.None, uid);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
                 $"[GameDb.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
-            return ErrorCode.CreatePlayerFailException;
+            return (ErrorCode.CreatePlayerFailException, uid);
         }
 
     }
 
-    public Task<ErrorCode> InsertPlayerItem(string UID)
+    public async Task<ErrorCode> InsertPlayerItem(string UID, PlayerItem item)
     {
-        throw new NotImplementedException();
+        var UniqueitemID = DateTime.Now.ToString("MMssddmmhhyyyy");
+        item.ItemUniqueID = UniqueitemID;
+        try
+        {
+            var Result = await _queryFactory.Query("Playerinfo").InsertAsync(item);
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                $"[GameDb.InsertPlayer] ErrorCode : {ErrorCode.InsertPlayerItemFail}");
+            return ErrorCode.CreatePlayerFailException;
+        }
     }
 
     private void GameDBOpen()
@@ -116,23 +130,24 @@ public class GameDb : IGameDb
         {
             _logger.ZLogError(ex,
                 $"[GameDB.GetPlayerItems] ErrorCode : {ErrorCode.GetPlayerItemsFail}");
-            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, null);
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.GetPlayerItemsFail, null);
         }
     }
 
-    public async Task<ErrorCode> SetMailAsync()
+    public async Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page)
     {
         try
         {
-           
+            var Mails = await _queryFactory.Query("Mail").Where("UID", uid).WhereFalse("Read")
+                .ForPage(page, 20).GetAsync<Mail>();
 
-            return ErrorCode.None;
+            return new Tuple<ErrorCode, List<Mail>>(ErrorCode.None, Mails.ToList<Mail>());
         }
         catch
         {
             _logger.ZLogError(
-                   $"ErrorMessage: Redis Connection Error");
-            return ErrorCode.RedisDbConnectionFail;
+                   $"ErrorMessage: Get Mail Error");
+            return new Tuple<ErrorCode, List<Mail>>(ErrorCode.GetMailFail, null);
         }
     }
 }

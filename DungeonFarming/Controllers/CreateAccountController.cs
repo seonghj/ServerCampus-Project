@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
 using DungeonFarming.Services;
@@ -39,11 +40,31 @@ public class CreateAccount : ControllerBase
             return response;
         }
 
-        errorCode = await _gameDb.InsertPlayer(request.ID);
+        (errorCode, var uid) = await _gameDb.InsertPlayer(request.ID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             await _accountDb.DeleteAccountAsync(request.ID);
+            return response;
+        }
+
+        PlayerItem basicItem = new PlayerItem
+        {
+            UID = uid,
+            ItemCode = "1",
+            ItemUniqueID = "tmp",
+
+            Attack = 10,
+            Defence = 5,
+            Magic = 1,
+            EnhanceCount = 0,
+            Count = 1
+        };
+
+        errorCode = await _gameDb.InsertPlayerItem(uid, basicItem);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
             return response;
         }
 
