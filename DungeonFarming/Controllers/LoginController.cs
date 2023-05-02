@@ -69,7 +69,7 @@ public class Login : ControllerBase
             return response;
         }
 
-        (errorCode, response.PlayerItems) = await _gameDb.GetPlayerItem(request.ID);
+        (errorCode, response.PlayerItems) = await _gameDb.GetPlayerItem(response.PlayerInfomation.UID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

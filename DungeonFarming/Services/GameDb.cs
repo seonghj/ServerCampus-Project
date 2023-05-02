@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CloudStructures.Structures;
 using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
@@ -108,26 +109,30 @@ public class GameDb : IGameDb
         try
         {
             var PlayerItems = await _queryFactory.Query("playerItem").Where("UID", uid).GetAsync<PlayerItem>();
-            List<PlayerItem> ItemList = new List<PlayerItem>();
-
-            foreach (var item in PlayerItems)
-            {
-                ItemList.Add(new PlayerItem
-                {
-                    UID = item.UID,
-                    ItemCode = item.ItemCode,
-                    ItemUniqueID = item.ItemUniqueID
-
-                });
-            }
-
-            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
+            
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, PlayerItems.ToList<PlayerItem>());
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDB.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
+                $"[GameDB.GetPlayerItems] ErrorCode : {ErrorCode.GetPlayerItemsFail}");
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, null);
+        }
+    }
+
+    public async Task<ErrorCode> SetMailAsync()
+    {
+        try
+        {
+           
+
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Redis Connection Error");
+            return ErrorCode.RedisDbConnectionFail;
         }
     }
 }
