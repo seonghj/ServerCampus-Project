@@ -17,4 +17,5 @@ public class LoginRequest
     [Required]
     [MinLength(1, ErrorMessage = "ClientVersion CANNOT BE EMPTY")]
     public string ClientVersion { get; set; }
+    public string MasterDataVersion { get; set; }
 }

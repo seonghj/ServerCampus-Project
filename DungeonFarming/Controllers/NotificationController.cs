@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
 using DungeonFarming.Services;
