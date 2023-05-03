@@ -33,18 +33,18 @@ public class CreateAccount : ControllerBase
     {
         var response = new CreateAccountResponse();
 
-        var errorCode = await _accountDb.CreateAccountAsync(request.ID, request.Password);
+        var errorCode = await _accountDb.CreateAccountAsync(request.AccountID, request.Password);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        (errorCode, var uid) = await _gameDb.InsertPlayer(request.ID);
+        (errorCode, var uid) = await _gameDb.InsertPlayer(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
-            await _accountDb.DeleteAccountAsync(request.ID);
+            await _accountDb.DeleteAccountAsync(request.AccountID);
             return response;
         }
 
@@ -68,7 +68,7 @@ public class CreateAccount : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.CreateAccount], new { ID = request.ID }, $"CreateAccount Success");
+        _logger.ZLogInformationWithPayload(EventIdDic[EventType.CreateAccount], new { accountID = request.AccountID }, $"CreateAccount Success");
         return response;
     }
 }

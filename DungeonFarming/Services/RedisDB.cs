@@ -9,7 +9,6 @@ using ZLogger;
 using static LogManager;
 using Microsoft.Extensions.Options;
 using DungeonFarming.ResponseFormat;
-using static Humanizer.In;
 
 namespace DungeonFarming.Services;
 
@@ -17,15 +16,13 @@ public class RedisDb : IRedisDb
 {
     public RedisConnection _redisConn;
     private static readonly ILogger<RedisDb> s_logger = GetLogger<RedisDb>();
-    readonly IOptions<DbConfig> _dbConfig;
 
-    public RedisDb(IOptions<DbConfig> dbConfig)
+    public void Init(string address)
     {
-        _dbConfig = dbConfig;
-        var config = new RedisConfig("default", _dbConfig.Value.Redis);
+        var config = new RedisConfig("default", address);
         _redisConn = new RedisConnection(config);
 
-        s_logger.ZLogDebug($"userDbAddress:{dbConfig.Value.Redis}");
+        s_logger.ZLogDebug($"userDbAddress:{address}");
     }
 
     // 인증키
@@ -166,5 +163,56 @@ public class RedisDb : IRedisDb
             return ErrorCode.RedisDbConnectionFail;
         }
     }
+
+    public async Task<bool> SetRequestLockAsync(string key)
+    {
+        try
+        {
+            var redis = new RedisString<AuthPlayer>(_redisConn, key, NxKeyTimeSpan());
+            if (await redis.SetAsync(new AuthPlayer
+            {
+            }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
+            {
+                return false;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public async Task<bool> DeleteRequestLockAsync(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            return false;
+        }
+
+        try
+        {
+            var redis = new RedisString<AuthPlayer>(_redisConn, key, null);
+            var redisResult = await redis.DeleteAsync();
+            return redisResult;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public TimeSpan NxKeyTimeSpan()
+    {
+        return TimeSpan.FromSeconds(RediskeyExpireTime.NxKeyExpireSecond);
+    }
 }
 
+public class RediskeyExpireTime
+{
+    public const ushort NxKeyExpireSecond = 3;
+    public const ushort RegistKeyExpireSecond = 6000;
+    public const ushort LoginKeyExpireMin = 60;
+    public const ushort TicketKeyExpireSecond = 6000;
+}

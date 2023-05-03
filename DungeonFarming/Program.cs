@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System;
 using DungeonFarming.Services;
+using DungeonFarming.MasterData;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,21 +21,25 @@ builder.Services.Configure<Versions>(configuration.GetSection(nameof(Versions)))
 builder.Services.AddTransient<IAccountDb, AccountDb>();
 builder.Services.AddTransient<IGameDb, GameDb>();
 builder.Services.AddSingleton<IRedisDb, RedisDb> ();
+builder.Services.AddSingleton<IMasterData, MasterData>();
 builder.Services.AddControllers();
 
 SettingLogger();
 
 var app = builder.Build();
 
-//log setting
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 LogManager.SetLoggerFactory(loggerFactory, "Global");
+
+app.UseMiddleware<DungeonFarming.Middleware.CheckAuth>();
 
 app.UseRouting();
 #pragma warning disable ASP0014
 app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 #pragma warning restore ASP0014
 
+var redisDB = app.Services.GetRequiredService<IRedisDb>();
+redisDB.Init(configuration.GetSection("DbConfig")["Redis"]);
 
 app.Run(configuration["ServerAddress"]);
 

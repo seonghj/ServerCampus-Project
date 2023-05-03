@@ -8,6 +8,8 @@ namespace DungeonFarming.Security;
 public class Security
 {
     private const string AllowableCharacters = "abcdefghijklmnopqrstuvwxyz0123456789";
+    private const string loginUID = "UID_";
+    private const string PlayerLockKey = "Lock_";
     public static string MakingSalt()
     {
         var bytes = new Byte[64];
@@ -39,6 +41,11 @@ public class Security
 
     public static string CreateUID()
     {
-        return DateTime.Now.ToString("MMssddmmyyyyhh");
+        return loginUID + DateTime.Now.ToString("MMssddmmyyyyhh");
+    }
+
+    public static string MakePlayerLockKey(string id)
+    {
+        return PlayerLockKey + id;
     }
 }

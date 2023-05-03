@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
 using DungeonFarming.Services;
+using DungeonFarming.MasterData;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,15 +21,18 @@ public class Login : ControllerBase
     private readonly IRedisDb _redisDb;
     readonly ILogger<Login> _logger;
     readonly IOptions<Versions> _version;
+    readonly IMasterData _MasterData;
 
     public Login(ILogger<Login> logger, IAccountDb accountDb
-        , IGameDb gameDb, IRedisDb redisDb, IOptions<Versions> version)
+        , IGameDb gameDb, IRedisDb redisDb
+        , IOptions<Versions> version, IMasterData masterdata)
     {
         _logger = logger;
         _accountDb = accountDb;
         _gameDb = gameDb;
         _redisDb = redisDb;
         _version = version;
+        _MasterData = masterdata;
     }
 
     [HttpPost]
@@ -36,33 +40,33 @@ public class Login : ControllerBase
     {
         var response = new LoginResponse();
 
-        if (request.ClientVersion != _version.Value.Client) 
-        {
-            response.Result = ErrorCode.ClinetVersionNotMatch;
-            return response;
-        }
+        //if (request.ClientVersion != _version.Value.Client) 
+        //{
+        //    response.Result = ErrorCode.ClinetVersionNotMatch;
+        //    return response;
+        //}
 
-        var errorCode = await _accountDb.VerifyAccount(request.ID, request.Password);
+        var errorCode = await _accountDb.VerifyAccount(request.AccountID, request.Password);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        errorCode = await _redisDb.InsertPlayerAuthAsync(request.ID);
+        errorCode = await _redisDb.InsertPlayerAuthAsync(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
-        (errorCode, response.PlayerAuth) = await _redisDb.GetPlayerAuthAsync(request.ID);
+        (errorCode, response.PlayerAuth) = await _redisDb.GetPlayerAuthAsync(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        (errorCode, response.PlayerInfomation) = await _gameDb.GetPlayerInfo(request.ID);
+        (errorCode, response.PlayerInfomation) = await _gameDb.GetPlayerInfo(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -76,7 +80,7 @@ public class Login : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { ID = request.ID }, "Login Success");
+        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { accountID = request.AccountID }, "Login Success");
         return response;
     }
 

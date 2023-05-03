@@ -7,7 +7,7 @@ public class CreateAccountRequest
 {
     [Required]
     [RegularExpression(@"^[a-zA-Z0-9\s]{1,20}$", ErrorMessage = "ID is not valid")]
-    public String ID { get; set; }
+    public String AccountID { get; set; }
 
     [Required]
     [MinLength(1, ErrorMessage = "PASSWORD CANNOT BE EMPTY")]

@@ -8,6 +8,7 @@ namespace DungeonFarming.Services;
 
 public interface IRedisDb
 {
+    public void Init(string address);
     public Task<ErrorCode> InsertPlayerAuthAsync(string accountid);
 
     public Task<Tuple<ErrorCode, AuthPlayer>> GetPlayerAuthAsync(string accountid);
@@ -17,4 +18,8 @@ public interface IRedisDb
     public Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey);
 
     public Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content);
+
+    public Task<bool> SetRequestLockAsync(string key);
+
+    public Task<bool> DeleteRequestLockAsync(string key);
 }

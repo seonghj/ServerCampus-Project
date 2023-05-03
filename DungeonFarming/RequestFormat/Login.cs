@@ -7,7 +7,7 @@ public class LoginRequest
 {
     [Required]
     [RegularExpression(@"^[a-zA-Z0-9\s]{1,20}$", ErrorMessage = "ID is not valid")]
-    public string ID { get; set; }
+    public string AccountID { get; set; }
 
     [Required]
     [MinLength(1, ErrorMessage = "PASSWORD CANNOT BE EMPTY")]

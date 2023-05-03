@@ -39,14 +39,14 @@ public class AccountDb : IAccountDb
         try
         {
             _logger.ZLogDebug(
-                $"[CreateAccount] ID: {AccountId}, Password: {pw}");
+                $"[CreateAccount] AccountID: {AccountId}, Password: {pw}");
 
             var salt = Security.Security.MakingSalt();
             var hashedPassword = Security.Security.PassWordHashing(salt, pw);
 
             var count = await _queryFactory.Query("account").InsertAsync(new
             {
-                ID = AccountId,
+                AccountID = AccountId,
                 Salt = salt,
                 hashedPW = hashedPassword
             });
@@ -71,7 +71,7 @@ public class AccountDb : IAccountDb
         try
         {
             // 존재하는 계정인지 체크
-            var accountInfo = await _queryFactory.Query("account").Where("ID", AccountId).FirstOrDefaultAsync<Account>();
+            var accountInfo = await _queryFactory.Query("account").Where("AccountID", AccountId).FirstOrDefaultAsync<Account>();
 
             if (accountInfo is null)
             {
@@ -100,10 +100,10 @@ public class AccountDb : IAccountDb
         try
         {
             _logger.ZLogDebug(
-                $"[DeleteAccount] ID: {AccountId}");
+                $"[DeleteAccount] AccountIDID: {AccountId}");
 
             var count = await _queryFactory.Query("account").Where(
-                "ID",
+                "AccountID",
                 "=",
                 AccountId
             ).DeleteAsync();
