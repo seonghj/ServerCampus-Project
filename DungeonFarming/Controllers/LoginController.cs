@@ -20,18 +20,16 @@ public class Login : ControllerBase
     readonly IGameDb _gameDb;
     private readonly IRedisDb _redisDb;
     readonly ILogger<Login> _logger;
-    readonly IOptions<Versions> _version;
     readonly IMasterData _MasterData;
 
     public Login(ILogger<Login> logger, IAccountDb accountDb
         , IGameDb gameDb, IRedisDb redisDb
-        , IOptions<Versions> version, IMasterData masterdata)
+        , IMasterData masterdata)
     {
         _logger = logger;
         _accountDb = accountDb;
         _gameDb = gameDb;
         _redisDb = redisDb;
-        _version = version;
         _MasterData = masterdata;
     }
 

@@ -31,7 +31,8 @@ var app = builder.Build();
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 LogManager.SetLoggerFactory(loggerFactory, "Global");
 
-app.UseMiddleware<DungeonFarming.Middleware.CheckAuth>();
+app.UseMiddleware<DungeonFarming.Middleware.CheckValidPlayer>();
+app.UseMiddleware<DungeonFarming.Middleware.CheckPlayerVersion>();
 
 app.UseRouting();
 #pragma warning disable ASP0014

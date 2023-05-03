@@ -11,6 +11,7 @@ public enum ErrorCode : UInt16
     InValidRequestHttpBody = 1003,
     AuthTokenFailWrongAuthToken = 1006,
     ClinetVersionNotMatch = 1007,
+    VersionCheckFailWrongVersion = 1008,
 
     // Account 2000 ~
     CreateAccountFailException = 2001,    

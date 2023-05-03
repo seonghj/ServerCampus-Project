@@ -11,6 +11,13 @@ public class NotificationRequest
     [Required]
     [MinLength(1, ErrorMessage = "AuthToken can not Empty")]
     public string AuthToken { get; set; } = "";
+
+    [Required]
+    [MinLength(1, ErrorMessage = "ClientVersion CANNOT BE EMPTY")]
+    public string ClientVersion { get; set; }
+    [Required]
+    [MinLength(1, ErrorMessage = "MasterDataVersion CANNOT BE EMPTY")]
+    public string MasterDataVersion { get; set; }
 }
 
 public class AddNotificationRequest

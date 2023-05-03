@@ -43,6 +43,7 @@ public class MasterData:IMasterData
 
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
+
         GetItemData();
         GetItemAttribute();
         GetInAppProduct();

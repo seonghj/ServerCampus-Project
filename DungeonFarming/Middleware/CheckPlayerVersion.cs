@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using DungeonFarming.DBTableFormat;
 using DungeonFarming.Services;
 using Microsoft.AspNetCore.Http;
 using DungeonFarming.Security;
@@ -11,23 +10,21 @@ using Microsoft.Extensions.Options;
 
 namespace DungeonFarming.Middleware;
 
-public class CheckValidPlayer
+public class CheckPlayerVersion
 {
-    private readonly IRedisDb _RedisDb;
     private readonly RequestDelegate _next;
     private readonly IOptions<Versions> _version;
 
-    public CheckValidPlayer(RequestDelegate next, IRedisDb redisDb)
+    public CheckPlayerVersion(RequestDelegate next, IOptions<Versions> version)
     {
-        _RedisDb = redisDb;
+        _version = version;
         _next = next;
     }
 
     public async Task Invoke(HttpContext context)
     {
         var formString = context.Request.Path.Value;
-        if (string.Compare(formString, "/CreateAccount", StringComparison.OrdinalIgnoreCase) == 0 ||
-            string.Compare(formString, "/Login", StringComparison.OrdinalIgnoreCase) == 0)
+        if (string.Compare(formString, "/CreateAccount", StringComparison.OrdinalIgnoreCase) == 0)
         {
             await _next(context);
 
@@ -36,9 +33,8 @@ public class CheckValidPlayer
 
         context.Request.EnableBuffering();
 
-        string AuthToken;
-        string AccountID;
-        string userLockKey = "";
+        string ClientVer;
+        string MasterDataVer;
 
 
         using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 4096, true))
@@ -52,54 +48,20 @@ public class CheckValidPlayer
 
             var document = JsonDocument.Parse(bodyStr);
 
-            if (CheckJsonFormat(context, document, out AccountID, out AuthToken))
+            if (CheckJsonFormat(context, document, out ClientVer, out MasterDataVer))
             {
                 return;
             }
 
-
-            var (GetAuthResult, userInfo) = await _RedisDb.GetPlayerAuthAsync(AccountID);
-            if (GetAuthResult != ErrorCode.None)
+            if (await CheckVersion(context, ClientVer, MasterDataVer))
             {
                 return;
             }
-
-            if (await CheckAuthToken(context, userInfo, AuthToken))
-            {
-                return;
-            }
-
-            userLockKey = Security.Security.MakePlayerLockKey(AccountID);
-            if (await SetLock(context, userLockKey))
-            {
-                return;
-            }
-
-            context.Items[nameof(AuthPlayer)] = userInfo;
         }
 
         context.Request.Body.Position = 0;
 
         await _next(context);
-
-        await _RedisDb.DeleteRequestLockAsync(userLockKey);
-    }
-
-    private async Task<bool> SetLock(HttpContext context, string AuthToken)
-    {
-        if (await _RedisDb.SetRequestLockAsync(AuthToken))
-        {
-            return false;
-        }
-
-
-        var errorJsonResponse = JsonSerializer.Serialize(new MiddlewareResponse
-        {
-            result = ErrorCode.AuthTokenFailSetNx
-        });
-        var bytes = Encoding.UTF8.GetBytes(errorJsonResponse);
-        await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
-        return true;
     }
 
     private async Task<bool> CheckBodyData(HttpContext context, string bodyStr)
@@ -119,22 +81,22 @@ public class CheckValidPlayer
         return true;
     }
 
-    private bool CheckJsonFormat(HttpContext context, JsonDocument document, out string accountID,
-        out string authToken)
+    private bool CheckJsonFormat(HttpContext context, JsonDocument document
+        , out string ClientVer, out string MasterDataVer)
     {
         try
         {
-            accountID = document.RootElement.GetProperty("AccountID").GetString();
-            authToken = document.RootElement.GetProperty("AuthToken").GetString();
+            ClientVer = document.RootElement.GetProperty("ClientVersion").GetString();
+            MasterDataVer = document.RootElement.GetProperty("MasterDataVersion").GetString();
             return false;
         }
         catch
         {
-            accountID = ""; 
-            authToken = "";
+            ClientVer = "";
+            MasterDataVer = "";
             var errorJsonResponse = JsonSerializer.Serialize(new MiddlewareResponse
             {
-                result = ErrorCode.AuthTokenFailWrongKeyword
+                result = ErrorCode.VersionCheckFailWrongVersion
             });
 
             var bytes = Encoding.UTF8.GetBytes(errorJsonResponse);
@@ -144,9 +106,10 @@ public class CheckValidPlayer
         }
     }
 
-    private static async Task<bool> CheckAuthToken(HttpContext context, AuthPlayer userInfo, string authToken)
+    private async Task<bool> CheckVersion(HttpContext context, string ClientVersion, string MasterDataVersion)
     {
-        if (string.CompareOrdinal(userInfo.AuthToken, authToken) == 0)
+        if (string.CompareOrdinal(ClientVersion, _version.Value.Client) == 0 &&
+            string.CompareOrdinal(MasterDataVersion, _version.Value.MasterData) == 0)
         {
             return false;
         }
@@ -154,7 +117,7 @@ public class CheckValidPlayer
 
         var errorJsonResponse = JsonSerializer.Serialize(new MiddlewareResponse
         {
-            result = ErrorCode.AuthTokenFailWrongAuthToken
+            result = ErrorCode.ClinetVersionNotMatch
         });
         var bytes = Encoding.UTF8.GetBytes(errorJsonResponse);
         await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
