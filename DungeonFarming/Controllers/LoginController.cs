@@ -38,12 +38,6 @@ public class Login : ControllerBase
     {
         var response = new LoginResponse();
 
-        //if (request.ClientVersion != _version.Value.Client) 
-        //{
-        //    response.Result = ErrorCode.ClinetVersionNotMatch;
-        //    return response;
-        //}
-
         var errorCode = await _accountDb.VerifyAccount(request.AccountID, request.Password);
         if (errorCode != ErrorCode.None)
         {

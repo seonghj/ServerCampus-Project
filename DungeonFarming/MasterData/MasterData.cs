@@ -44,12 +44,7 @@ public class MasterData:IMasterData
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
 
-        GetItemData();
-        GetItemAttribute();
-        GetInAppProduct();
-        GetAttendance();
-        GetStageItem();
-        GetStageNPC();
+        GetMasterData();
     }
 
     public async Task<ErrorCode> GetItemData()
@@ -183,6 +178,7 @@ public class MasterData:IMasterData
                 $"[[GetStageItem From MasterData] ErrorCode: {ErrorCode.None}");
             return ErrorCode.CreateAccountFailException;
         }
+
     }
 
     public async Task<ErrorCode> GetStageNPC()
@@ -217,16 +213,99 @@ public class MasterData:IMasterData
         }
     }
 
-    private Task<ErrorCode> GetMasterData()
+    public async Task<ErrorCode> GetMasterData()
     {
-        Task<ErrorCode> errorCode;
-        errorCode = GetItemData();
-        errorCode = GetItemAttribute();
-        errorCode = GetInAppProduct();
-        errorCode = GetAttendance();
-        errorCode = GetStageItem();
-        errorCode = GetStageNPC();
-        return errorCode;
+        try
+        {
+            _logger.ZLogDebug(
+                $"[GetItemData From MasterData]");
+
+            var result1 = await _queryFactory.Query("MasterDataItem").GetAsync<Item>();
+
+            Items = new Dictionary<Int32, Item>();
+
+            foreach (var it in result1.ToList()) { Items.Add(it.Code, it); }
+
+            _logger.ZLogDebug(
+                $"[GetItemAttribute From MasterData]");
+
+            var result2 = await _queryFactory.Query("MasterDataItemAttribute").GetAsync<ItemAttribute>();
+
+            ItemAttributes = new Dictionary<Int32, ItemAttribute>();
+
+            foreach (var it in result2.ToList()) { ItemAttributes.Add(it.Code, it); }
+
+            _logger.ZLogDebug(
+                $"[GetAttendance From MasterData]");
+
+            var result3 = await _queryFactory.Query("MasterDataAttendance").GetAsync<Attendance>();
+
+            Attendances = new Dictionary<Int32, Attendance>();
+
+            foreach (var it in result3.ToList()) { Attendances.Add(it.Code, it); }
+
+            _logger.ZLogDebug(
+                $"[GetInAppProduct From MasterData]");
+
+            var result4 = await _queryFactory.Query("masterdatainappproduct").GetAsync<InAppProductGetter>();
+
+            InAppProducts = new Dictionary<Int32, InAppProduct>();
+
+            foreach (var it in result4.ToList())
+            {
+                List<ProductItems> list = JsonSerializer.Deserialize<List<ProductItems>>(it.Item);
+
+                InAppProducts.Add(it.Code, new InAppProduct
+                {
+                    Code = it.Code,
+                    Item = list
+                });
+            }
+
+            _logger.ZLogDebug(
+                $"[GetStageItem From MasterData]");
+
+            var result5 = await _queryFactory.Query("MasterDataStageItem").GetAsync<StageItemGetter>();
+
+            StageItems = new Dictionary<Int32, StageItem>();
+
+            foreach (var it in result5.ToList())
+            {
+                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(it.ItemCode);
+
+                StageItems.Add(it.Code, new StageItem
+                {
+                    Code = it.Code,
+                    ItemCode = list
+                });
+            }
+
+            _logger.ZLogDebug(
+                $"[GetStageNPC From MasterData]");
+
+            var result6 = await _queryFactory.Query("MasterDataStageNPC").GetAsync<StageNPCGetter>();
+
+            StageNPCs = new Dictionary<Int32, StageNPC>();
+
+            foreach (var it in result6.ToList())
+            {
+                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(it.NPCinfo);
+
+                StageNPCs.Add(it.Code, new StageNPC
+                {
+                    Code = it.Code,
+                    NPCInfoList = list
+                });
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            _logger.ZLogError(e,
+                $"[[GetItemData From MasterData] ErrorCode: {ErrorCode.None}");
+            return ErrorCode.CreateAccountFailException;
+        }
     }
 
     private void DBOpen()

@@ -18,4 +18,7 @@ public interface IGameDb
     public Task<Tuple<ErrorCode, List<PlayerItem>>> GetPlayerItem(string AccountId);
 
     public Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page);
+
+    public Task<Tuple<ErrorCode, MailData>> GetMailDataAsync(string uid, string mailcode);
+
 }

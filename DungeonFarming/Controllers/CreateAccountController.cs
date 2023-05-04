@@ -4,8 +4,10 @@ using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
 using DungeonFarming.Services;
+using DungeonFarming.MasterData;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using DungeonFarming.Security;
 using ZLogger;
 using static LogManager;
 
@@ -20,12 +22,15 @@ public class CreateAccount : ControllerBase
 
     private readonly ILogger<CreateAccount> _logger;
 
+    private readonly IMasterData _MasterData;
+
     public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb
-        , IGameDb gameDb)
+        , IGameDb gameDb, IMasterData masterData)
     {
         _logger = logger;
         _accountDb = accountDb;
         _gameDb = gameDb;
+        _MasterData = masterData;
     }
 
     [HttpPost]
@@ -50,13 +55,14 @@ public class CreateAccount : ControllerBase
 
         PlayerItem basicItem = new PlayerItem
         {
+            // ItemCode 2 = 나무 칼
             UID = uid,
-            ItemCode = "1",
-            ItemUniqueID = "tmp",
+            ItemCode = _MasterData.Items[2].Code,
+            ItemUniqueID = Security.Security.ItemUniqueID(),
 
-            Attack = 10,
-            Defence = 5,
-            Magic = 1,
+            Attack = _MasterData.Items[2].Attack,
+            Defence = _MasterData.Items[2].Defence,
+            Magic = _MasterData.Items[2].Magic,
             EnhanceCount = 0,
             Count = 1
         };

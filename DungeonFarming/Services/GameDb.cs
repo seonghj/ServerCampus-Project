@@ -67,11 +67,9 @@ public class GameDb : IGameDb
 
     public async Task<ErrorCode> InsertPlayerItem(string UID, PlayerItem item)
     {
-        var UniqueitemID = DateTime.Now.ToString("MMssddmmhhyyyy");
-        item.ItemUniqueID = UniqueitemID;
         try
         {
-            var Result = await _queryFactory.Query("Playerinfo").InsertAsync(item);
+            var Result = await _queryFactory.Query("PlayerItem").InsertAsync(item);
 
             return ErrorCode.None;
         }
@@ -136,10 +134,13 @@ public class GameDb : IGameDb
 
     public async Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page)
     {
+        var PageSize = 20;
         try
         {
-            var Mails = await _queryFactory.Query("Mail").Where("UID", uid).WhereFalse("Read")
-                .ForPage(page, 20).GetAsync<Mail>();
+            var Mails = await _queryFactory.Query("Mail").Where("UID", uid).Where("IsRead", 0)
+                .Where("ExpirationDate", ">=", DateTime.Now.ToString("yyyy-MM-dd"))
+                .OrderBy("CreatedAt")
+                .ForPage(page, PageSize).GetAsync<Mail>();
 
             return new Tuple<ErrorCode, List<Mail>>(ErrorCode.None, Mails.ToList<Mail>());
         }
@@ -148,6 +149,24 @@ public class GameDb : IGameDb
             _logger.ZLogError(
                    $"ErrorMessage: Get Mail Error");
             return new Tuple<ErrorCode, List<Mail>>(ErrorCode.GetMailFail, null);
+        }
+    }
+
+    public async Task<Tuple<ErrorCode, MailData>> GetMailDataAsync(string uid, string mailcode)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("MailData").Where("UID", uid)
+                .Where("MailCode", mailcode).FirstOrDefaultAsync<MailData>();
+
+
+            return new Tuple<ErrorCode, MailData>(ErrorCode.None, result);
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Get Mail Error");
+            return new Tuple<ErrorCode, MailData>(ErrorCode.GetMailDataFail, null);
         }
     }
 }

@@ -68,6 +68,7 @@ public enum ErrorCode : UInt16
     GetGameDbConnectionFail = 4002,
     SetMailFail = 4010,
     GetMailFail = 4011,
+    GetMailDataFail = 4012,
 
     //Redis 5000-
     RedisDbConnectionFail = 5002

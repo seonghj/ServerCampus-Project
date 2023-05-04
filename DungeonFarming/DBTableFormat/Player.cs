@@ -26,7 +26,7 @@ public class PlayerInfo
 public class PlayerItem
 {
     public string UID { get; set; }
-    public string ItemCode { get; set; }
+    public Int32 ItemCode { get; set; }
     public string ItemUniqueID { get; set; }
 
     public Int32 Attack { get; set; }

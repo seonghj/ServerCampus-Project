@@ -48,4 +48,9 @@ public class Security
     {
         return PlayerLockKey + id;
     }
+
+    public static string ItemUniqueID()
+    {
+        return "item" + DateTime.Now.ToString("MMssddmmyyyyhh");
+    }
 }
