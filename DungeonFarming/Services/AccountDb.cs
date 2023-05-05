@@ -69,7 +69,6 @@ public class AccountDb : IAccountDb
     {
         try
         {
-            // 존재하는 계정인지 체크
             var accountInfo = await _queryFactory.Query("account").Where("AccountID", AccountId).FirstOrDefaultAsync<Account>();
 
             if (accountInfo is null)

@@ -16,6 +16,7 @@ using MySqlConnector;
 using SqlKata.Execution;
 using ZLogger;
 using System.Collections;
+using System.Diagnostics;
 
 namespace DungeonFarming.Services;
 
@@ -200,6 +201,21 @@ public class GameDb : IGameDb
                     Count = it.ItemCount
                 });
             }
+            //IEnumerable<dynamic> insertData = ItemList.Select(item => new
+            //{
+            //    UID = item.UID,
+            //    ItemCode = item.ItemCode,
+            //    ItemUniqueID = item.ItemUniqueID,
+            //    ItemName = item.ItemName,
+            //    Attack = item.Attack,
+            //    Defence = item.Defence,   
+            //    Magic = item.Magic,
+            //    EnhanceCount = item.EnhanceCount,
+            //    Count = item.Count
+            //});
+            
+            //var insertQuery = _queryFactory.Query("PlayerItem").AsInsert(insertData);
+            //var affectedRows = await _queryFactory.ExecuteAsync(insertQuery);
 
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
