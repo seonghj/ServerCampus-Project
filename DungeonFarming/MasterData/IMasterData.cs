@@ -4,29 +4,42 @@ using Microsoft.Extensions.Options;
 namespace DungeonFarming.MasterData;
 public interface IMasterData
 {
-    public Dictionary<Int32, Item> Items { get; set; }
+    public Dictionary<Int32, Item> ItemDict { get; set; }
 
-    public Dictionary<Int32, ItemAttribute> ItemAttributes { get; set; }
+    public Dictionary<Int32, ItemAttribute> ItemAttributeDict { get; set; }
 
-    public Dictionary<Int32, InAppProduct> InAppProducts { get; set; }
+    public Dictionary<Int32, InAppProduct> InAppProductDict { get; set; }
 
-    public Dictionary<Int32, Attendance> Attendances { get; set; }
+    public Dictionary<Int32, Attendance> AttendanceDict { get; set; }
 
-    public Dictionary<Int32, StageItem> StageItems { get; set; }
+    public Dictionary<Int32, StageItem> StageItemDict { get; set; }
 
-    public Dictionary<Int32, StageNPC> StageNPCs { get; set; }
+    public Dictionary<Int32, StageNPC> StageNPCDict { get; set; }
 
-    Task<ErrorCode> GetItemData();
+    Task<ErrorCode> getMasterData_Item();
 
-    Task<ErrorCode> GetItemAttribute();
+    Task<ErrorCode> getMasterData_ItemAttribute();
 
-    Task<ErrorCode> GetAttendance();
+    Task<ErrorCode> getMasterData_Attendance();
 
-    Task<ErrorCode> GetInAppProduct();
+    Task<ErrorCode> getMasterData_InAppProduct();
 
-    Task<ErrorCode> GetStageItem();
+    Task<ErrorCode> getMasterData_StageItem();
 
-    Task<ErrorCode> GetStageNPC();
+    Task<ErrorCode> getMasterData_StageNPC();
 
-    Task<ErrorCode> GetMasterData();
+    Task<ErrorCode> getMasterData();
+
+    Item getItemData(Int32 Code);
+
+    ItemAttribute getItemAttributeData(Int32 Code);
+
+    InAppProduct getInAppProductData(Int32 Code);
+
+    Attendance getAttendanceData(Int32 Code);
+
+    StageItem getStageItemData(Int32 Code);
+
+    StageNPC getStageNPCData(Int32 Code);
+   
 }

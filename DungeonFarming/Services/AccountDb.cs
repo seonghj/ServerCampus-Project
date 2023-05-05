@@ -3,7 +3,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using DungeonFarming.DBTableFormat;
-using DungeonFarming.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
@@ -41,8 +40,8 @@ public class AccountDb : IAccountDb
             _logger.ZLogDebug(
                 $"[CreateAccount] AccountID: {AccountId}, Password: {pw}");
 
-            var salt = Security.Security.MakingSalt();
-            var hashedPassword = Security.Security.PassWordHashing(salt, pw);
+            var salt = Service.Security.MakingSalt();
+            var hashedPassword = Service.Security.PassWordHashing(salt, pw);
 
             var count = await _queryFactory.Query("account").InsertAsync(new
             {
@@ -77,7 +76,7 @@ public class AccountDb : IAccountDb
             {
                 return ErrorCode.LoginFailUserNotExist;
             }
-            var hashedPassword = Security.Security.PassWordHashing(accountInfo.Salt, pw);
+            var hashedPassword = Service.Security.PassWordHashing(accountInfo.Salt, pw);
             if (accountInfo.HashedPW != hashedPassword)
             {
                 _logger.ZLogError(

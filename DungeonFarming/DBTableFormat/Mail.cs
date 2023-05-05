@@ -14,9 +14,9 @@ public class Mail
     public string CreatedAt { get; set; }
 }
 
-public class MailData
+public class MailItem
 {
     public string UID { get; set; }
     public string MailCode { get; set; }
-    public List<PlayerItem> Items { get; set; }
+    public string Items { get; set; }
 }

@@ -33,17 +33,6 @@ public class Notification : ControllerBase
         var response = new NotificationResponse();
         var NotificationKey = _hashkey.Value.Notification;
 
-        //(var errorCode, var CheckAuthResult) = await _redisDb.CheckPlayerAuthAsync(request.AccountID, request.AuthToken);
-        //if (errorCode != ErrorCode.None)
-        //{
-        //    response.Result = errorCode;
-        //    return response;
-        //}
-        //else if (CheckAuthResult == false)
-        //{
-        //    response.Result = ErrorCode.AuthTokenNotFound;
-        //    return response;
-        //}
         (var errorCode, response.NotificationList) = await _redisDb.GetNotificationAsync(NotificationKey);
         if (errorCode != ErrorCode.None)
         {

@@ -15,3 +15,10 @@ public class Item
     public Int32 Magic { get; set; } = 0;
     public Int32 EnhanceMaxCount { get; set; } = 0;
 }
+
+public class ItemCodeAndCount
+{
+    public Int32 ItemCode { get; set; }
+
+    public Int32 ItemCount { get; set; }
+}

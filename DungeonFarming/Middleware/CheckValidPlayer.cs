@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using DungeonFarming.DBTableFormat;
 using DungeonFarming.Services;
 using Microsoft.AspNetCore.Http;
-using DungeonFarming.Security;
 using Microsoft.Extensions.Options;
 
 namespace DungeonFarming.Middleware;
@@ -69,7 +68,7 @@ public class CheckValidPlayer
                 return;
             }
 
-            userLockKey = Security.Security.MakePlayerLockKey(AccountID);
+            userLockKey = Service.Security.MakePlayerLockKey(AccountID);
             if (await SetLock(context, userLockKey))
             {
                 return;

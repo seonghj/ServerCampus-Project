@@ -8,12 +8,5 @@ public class InAppProductGetter
 public class InAppProduct
 {
     public Int32 Code { get; set; }
-    public List<ProductItems> Item { get; set; }
-}
-
-public class ProductItems
-{
-    public Int32 ItemCode { get; set; }
-
-    public Int32 ItemCount { get; set; }
+    public List<ItemCodeAndCount> Item { get; set; }
 }

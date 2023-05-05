@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,12 +9,13 @@ using CloudStructures.Structures;
 using DungeonFarming.DBTableFormat;
 using DungeonFarming.RequestFormat;
 using DungeonFarming.ResponseFormat;
-using DungeonFarming.Security;
+using DungeonFarming.MasterData;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
 using SqlKata.Execution;
 using ZLogger;
+using System.Collections;
 
 namespace DungeonFarming.Services;
 
@@ -21,12 +23,14 @@ public class GameDb : IGameDb
 {
     readonly ILogger<GameDb> _logger;
     readonly IOptions<DbConfig> _dbConfig;
+    readonly IMasterData _MasterData;
 
     IDbConnection _dbConn;
     SqlKata.Compilers.MySqlCompiler _compiler;
     QueryFactory _queryFactory;
 
-    public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig)
+    public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig
+        , IMasterData masterData)
     {
         _dbConfig = dbConfig;
         _logger = logger;
@@ -35,11 +39,12 @@ public class GameDb : IGameDb
 
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
+        _MasterData = masterData;
     }
 
     public async Task<(ErrorCode, string)> InsertPlayer(string AccountId)
     {
-        var uid = Security.Security.CreateUID();
+        var uid = Service.Security.CreateUID();
         try
         {
             var Result = await _queryFactory.Query("Playerinfo").InsertAsync(new
@@ -53,6 +58,22 @@ public class GameDb : IGameDb
                 Gold = 10000,
                 LastClearStage = 0
             });
+
+            PlayerItem basicItem = new PlayerItem
+            {
+                // ItemCode 2 = 작은 칼
+                UID = uid,
+                ItemCode = _MasterData.ItemDict[2].Code,
+                ItemUniqueID = Service.Security.ItemUniqueID(_MasterData.ItemDict[2].Code),
+                ItemName = _MasterData.ItemDict[2].Name,
+                Attack = _MasterData.ItemDict[2].Attack,
+                Defence = _MasterData.ItemDict[2].Defence,
+                Magic = _MasterData.ItemDict[2].Magic,
+                EnhanceCount = 0,
+                Count = 1
+            };
+
+            Result = await _queryFactory.Query("PlayerItem").InsertAsync(basicItem);
 
             return (ErrorCode.None, uid);
         }
@@ -152,21 +173,43 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<Tuple<ErrorCode, MailData>> GetMailDataAsync(string uid, string mailcode)
+    public async Task<Tuple<ErrorCode, List<PlayerItem>>> GetMailItemAsync(string uid, string mailcode)
     {
         try
         {
-            var result = await _queryFactory.Query("MailData").Where("UID", uid)
-                .Where("MailCode", mailcode).FirstOrDefaultAsync<MailData>();
+            var result = await _queryFactory.Query("MailItem").Select("Items")
+                .Where("UID", uid).Where("MailCode", mailcode)
+                .FirstOrDefaultAsync<string>();
 
+            List <ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
+            List<PlayerItem> ItemList = new List<PlayerItem>();
 
-            return new Tuple<ErrorCode, MailData>(ErrorCode.None, result);
+            foreach (var it in ItemInMail)
+            {
+                Item itemMasterdata = _MasterData.getItemData(it.ItemCode);
+                ItemList.Add(new PlayerItem
+                {
+                    UID = uid,
+                    ItemUniqueID = Service.Security.ItemUniqueID(it.ItemCode),
+                    ItemCode = it.ItemCode,
+                    ItemName = itemMasterdata.Name,
+                    Attack = itemMasterdata.Attack,
+                    Defence = itemMasterdata.Defence,
+                    Magic = itemMasterdata.Magic,
+                    EnhanceCount = 0,
+                    Count = it.ItemCount
+                });
+            }
+
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
         catch
         {
             _logger.ZLogError(
-                   $"ErrorMessage: Get Mail Error");
-            return new Tuple<ErrorCode, MailData>(ErrorCode.GetMailDataFail, null);
+                   $"ErrorMessage: Get Item In Mail Error");
+            return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.GetMailItemFail, null);
         }
     }
+
+
 }

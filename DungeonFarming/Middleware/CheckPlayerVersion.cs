@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using DungeonFarming.Services;
 using Microsoft.AspNetCore.Http;
-using DungeonFarming.Security;
 using Microsoft.Extensions.Options;
 
 namespace DungeonFarming.Middleware;

@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace DungeonFarming.Security;
+namespace DungeonFarming.Service;
 
 public class Security
 {
@@ -49,8 +49,8 @@ public class Security
         return PlayerLockKey + id;
     }
 
-    public static string ItemUniqueID()
+    public static string ItemUniqueID(Int32 itemCode)
     {
-        return "item" + DateTime.Now.ToString("MMssddmmyyyyhh");
+        return "item"+ itemCode.ToString() + DateTime.Now.ToString("yyyyhhMMssddmm");
     }
 }
