@@ -49,8 +49,13 @@ public class Security
         return PlayerLockKey + id;
     }
 
-    public static string ItemUniqueID(Int32 itemCode)
+    public static string MakeItemUniqueID(Int32 itemCode)
     {
-        return "item"+ itemCode.ToString() + DateTime.Now.ToString("yyyyhhMMssddmm");
+        return "item"+ itemCode.ToString() + "_" + DateTime.Now.ToString("yyyyhhMMssddmm");
+    }
+
+    public static string MakeMailKey()
+    {
+        return "Mail_" + DateTime.Now.ToString("ddyyyyhhssMMmm");
     }
 }

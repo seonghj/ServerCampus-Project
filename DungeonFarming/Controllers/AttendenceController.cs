@@ -26,14 +26,14 @@ public class Attendence : ControllerBase
         _gameDb = gameDb;
     }
 
-    //[HttpPost]
-    //public async Task<AttendenceRequest> Post(AttendenceRequest request)
-    //{
-    //    var response = new AttendenceResponse();
+    [HttpPost]
+    public async Task<AttendenceResponse> Post(AttendenceRequest request)
+    {
+        var response = new AttendenceResponse();
 
-    //    (var errorCode, response.Items) =
+        response.Result = await _gameDb.SendAttendenceRewordsMail(request.UID);
 
-    //    _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Attendence Check Success");
-    //    return response;
-    //}
+        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Attendence Rewords Success");
+        return response;
+    }
 }

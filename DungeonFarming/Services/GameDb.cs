@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using System.Globalization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using SqlKata;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DungeonFarming.Services;
 
@@ -69,7 +70,7 @@ public class GameDb : IGameDb
                 // ItemCode 2 = 작은 칼
                 UID = uid,
                 ItemCode = _MasterData.ItemDict[2].Code,
-                ItemUniqueID = Service.Security.ItemUniqueID(_MasterData.ItemDict[2].Code),
+                ItemUniqueID = Service.Security.MakeItemUniqueID(_MasterData.ItemDict[2].Code),
                 ItemName = _MasterData.ItemDict[2].Name,
                 Attack = _MasterData.ItemDict[2].Attack,
                 Defence = _MasterData.ItemDict[2].Defence,
@@ -199,7 +200,7 @@ public class GameDb : IGameDb
                 ItemList.Add(new PlayerItem
                 {
                     UID = uid,
-                    ItemUniqueID = Service.Security.ItemUniqueID(it.ItemCode),
+                    ItemUniqueID = Service.Security.MakeItemUniqueID(it.ItemCode),
                     ItemCode = it.ItemCode,
                     ItemName = itemMasterdata.Name,
                     Attack = itemMasterdata.Attack,
@@ -233,7 +234,7 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<Tuple<ErrorCode, PlayerInfo>> LoginPlayer(string accountid)
+    public async Task<Tuple<ErrorCode, PlayerInfo>> LoginAndUpdateAttendenceDay(string accountid)
     {
         try
         {
@@ -261,15 +262,57 @@ public class GameDb : IGameDb
             Info.ConsecutiveLoginDays = NextAttendenceDay;
             return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, Info);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine(ex);
             _logger.ZLogError(
                    $"ErrorMessage: PlayerLogin  Error");
             return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.PlayerLoginFail, null);
         }
     }
 
+
+    public async Task<ErrorCode> SendAttendenceRewordsMail(string uid)
+    {
+        try
+        {
+            var Info = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
+
+            Attendance rewords = _MasterData.AttendanceDict[Info.ConsecutiveLoginDays];
+
+            string mailCode = Service.Security.MakeMailKey();
+            var result = await _queryFactory.Query("Mail").InsertAsync(new Mail
+            {
+                UID = uid,
+                MailCode = mailCode,
+                Title = "출석 보상",
+                Content = "출석 보상",
+                ExpirationDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                IsRead = false
+            });
+            
+            List<ItemCodeAndCount> items = new List<ItemCodeAndCount>();
+            items.Add(new ItemCodeAndCount
+            {
+                ItemCode = rewords.ItemCode,
+                ItemCount = rewords.Count
+            });
+
+            result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
+            {
+                UID = uid,
+                MailCode = mailCode,
+                Items = JsonSerializer.Serialize<List<ItemCodeAndCount>>(items)
+            });
+
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Send Attendence Rewords Error");
+            return ErrorCode.None;
+        }
+    }
 
     // 인앱결제
 
