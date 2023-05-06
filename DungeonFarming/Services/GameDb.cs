@@ -7,8 +7,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CloudStructures.Structures;
 using DungeonFarming.DBTableFormat;
-using DungeonFarming.RequestFormat;
-using DungeonFarming.ResponseFormat;
 using DungeonFarming.MasterData;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -71,7 +69,7 @@ public class GameDb : IGameDb
                 Defence = _MasterData.ItemDict[2].Defence,
                 Magic = _MasterData.ItemDict[2].Magic,
                 EnhanceCount = 0,
-                Count = 1
+                ItemCount = 1
             };
 
             Result = await _queryFactory.Query("PlayerItem").InsertAsync(basicItem);
@@ -154,6 +152,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 우편함 기능
     public async Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page)
     {
         var PageSize = 20;
@@ -178,6 +177,9 @@ public class GameDb : IGameDb
     {
         try
         {
+            var isRead =  await _queryFactory.Query("Mail").Select("IsRead").FirstOrDefaultAsync<int>();
+            if (isRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
+
             var result = await _queryFactory.Query("MailItem").Select("Items")
                 .Where("UID", uid).Where("MailCode", mailcode)
                 .FirstOrDefaultAsync<string>();
@@ -198,24 +200,22 @@ public class GameDb : IGameDb
                     Defence = itemMasterdata.Defence,
                     Magic = itemMasterdata.Magic,
                     EnhanceCount = 0,
-                    Count = it.ItemCount
+                    ItemCount = it.ItemCount
                 });
             }
-            //IEnumerable<dynamic> insertData = ItemList.Select(item => new
-            //{
-            //    UID = item.UID,
-            //    ItemCode = item.ItemCode,
-            //    ItemUniqueID = item.ItemUniqueID,
-            //    ItemName = item.ItemName,
-            //    Attack = item.Attack,
-            //    Defence = item.Defence,   
-            //    Magic = item.Magic,
-            //    EnhanceCount = item.EnhanceCount,
-            //    Count = item.Count
-            //});
-            
-            //var insertQuery = _queryFactory.Query("PlayerItem").AsInsert(insertData);
-            //var affectedRows = await _queryFactory.ExecuteAsync(insertQuery);
+            var insertData = ItemList.Select(item => new object[]
+            { item.UID, item.ItemCode, item.ItemUniqueID, item.ItemName, item.Attack,
+                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount}).ToArray();
+
+            var insertDataCols = new[] { "UID", "ItemCode", "ItemUniqueID", "ItemName"
+                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
+
+            var Query = _queryFactory.Query("PlayerItem").AsInsert(insertDataCols, insertData);
+            var res = await _queryFactory.ExecuteAsync(Query);
+
+            Query = _queryFactory.Query("Mail").Where("UID", uid).Where("MailCode", mailcode)
+                .AsUpdate(new { IsRead = 1 });
+            res = await _queryFactory.ExecuteAsync(Query);
 
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
@@ -227,5 +227,6 @@ public class GameDb : IGameDb
         }
     }
 
+    // 인앱결제
 
 }

@@ -12,5 +12,5 @@ public class PlayerItem
     public Int32 Defence { get; set; }
     public Int32 Magic { get; set; }
     public Int32 EnhanceCount { get; set; }
-    public Int32 Count { get; set; }
+    public Int32 ItemCount { get; set; }
 }

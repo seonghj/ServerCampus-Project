@@ -69,6 +69,7 @@ public enum ErrorCode : UInt16
     SetMailFail = 4010,
     GetMailFail = 4011,
     GetMailItemFail = 4012,
+    AlreadyGetMailItem = 4013,
 
     //Redis 5000-
     RedisDbConnectionFail = 5002
