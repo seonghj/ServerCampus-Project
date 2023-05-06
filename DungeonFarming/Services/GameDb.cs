@@ -15,6 +15,10 @@ using SqlKata.Execution;
 using ZLogger;
 using System.Collections;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using System.Globalization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using SqlKata;
 
 namespace DungeonFarming.Services;
 
@@ -55,6 +59,8 @@ public class GameDb : IGameDb
                 Hp = 50,
                 Mp = 60,
                 Gold = 10000,
+                LastLogin = DateTime.Now.ToString("yyyy-MM-dd"),
+                ConsecutiveLoginDays = 1,
                 LastClearStage = 0
             });
 
@@ -226,6 +232,44 @@ public class GameDb : IGameDb
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.GetMailItemFail, null);
         }
     }
+
+    public async Task<Tuple<ErrorCode, PlayerInfo>> LoginPlayer(string accountid)
+    {
+        try
+        {
+            var Info = await _queryFactory.Query("playerinfo").Where("AccountID", accountid).FirstOrDefaultAsync<PlayerInfo>();
+
+            DateTime LastLoginDate = DateTime.ParseExact(Info.LastLoginTime, "dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+
+            TimeSpan DateDifference = DateTime.Today - LastLoginDate.Date;
+
+            Int32 NextAttendenceDay = 0;
+
+            if (DateDifference != TimeSpan.FromDays(1))
+            {
+                NextAttendenceDay = 1;
+            }
+            else NextAttendenceDay = Info.ConsecutiveLoginDays + 1;
+
+            var result = await _queryFactory.Query("PlayerInfo").Where("AccountID", accountid)
+                    .UpdateAsync(new
+                    {
+                        ConsecutiveLoginDays = NextAttendenceDay,
+                        LastLoginTime = DateTime.Now
+                    });
+            Info.LastLoginTime = DateTime.Now.ToString();
+            Info.ConsecutiveLoginDays = NextAttendenceDay;
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, Info);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _logger.ZLogError(
+                   $"ErrorMessage: PlayerLogin  Error");
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.PlayerLoginFail, null);
+        }
+    }
+
 
     // 인앱결제
 

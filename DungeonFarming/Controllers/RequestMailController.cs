@@ -17,15 +17,12 @@ namespace DungeonFarming.Controllers;
 public class RequestMail : ControllerBase
 {
     readonly IGameDb _gameDb;
-    private readonly IRedisDb _redisDb;
     readonly ILogger<Login> _logger;
 
-    public RequestMail(ILogger<Login> logger, IGameDb gameDb
-        , IRedisDb redisDb)
+    public RequestMail(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
-        _redisDb = redisDb;
     }
 
     [HttpPost]

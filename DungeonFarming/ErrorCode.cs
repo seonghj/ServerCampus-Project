@@ -63,6 +63,7 @@ public enum ErrorCode : UInt16
     GetPlayerListFail = 3014,
 
     InsertPlayerItemFail = 3015,
+    PlayerLoginFail = 3016,
 
     //GameDb 4000~ 
     GetGameDbConnectionFail = 4002,

@@ -15,25 +15,16 @@ namespace DungeonFarming.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class GetMailItem : ControllerBase
+public class BuyInAppProduct : ControllerBase
 {
     readonly IGameDb _gameDb;
     readonly ILogger<Login> _logger;
 
-    public GetMailItem(ILogger<Login> logger, IGameDb gameDb)
+    public BuyInAppProduct(ILogger<Login> logger, IGameDb gameDb
+        , IMasterData masterData)
     {
         _logger = logger;
         _gameDb = gameDb;
     }
 
-    [HttpPost]
-    public async Task<MailItemResponse> Post(MailItemRequest request)
-    {
-        var response = new MailItemResponse();
-
-        (var errorCode, response.Items) = await _gameDb.GetMailItemAsync(request.UID, request.MailCode);
-
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Item In Mail Send Success");
-        return response;
-    }
 }

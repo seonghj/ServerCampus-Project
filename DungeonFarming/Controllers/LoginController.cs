@@ -20,17 +20,14 @@ public class Login : ControllerBase
     readonly IGameDb _gameDb;
     private readonly IRedisDb _redisDb;
     readonly ILogger<Login> _logger;
-    readonly IMasterData _MasterData;
 
     public Login(ILogger<Login> logger, IAccountDb accountDb
-        , IGameDb gameDb, IRedisDb redisDb
-        , IMasterData masterdata)
+        , IGameDb gameDb, IRedisDb redisDb)
     {
         _logger = logger;
         _accountDb = accountDb;
         _gameDb = gameDb;
         _redisDb = redisDb;
-        _MasterData = masterdata;
     }
 
     [HttpPost]
@@ -58,7 +55,8 @@ public class Login : ControllerBase
             return response;
         }
 
-        (errorCode, response.PlayerInfomation) = await _gameDb.GetPlayerInfo(request.AccountID);
+
+        (errorCode, response.PlayerInfomation) = await _gameDb.LoginAndUpdateAttendenceDay(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
