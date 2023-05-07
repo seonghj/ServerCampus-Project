@@ -31,6 +31,11 @@ public class RequestMail : ControllerBase
         var response = new MailResponse();
 
         (var errorCode, response.MailList) = await _gameDb.GetMailAsync(request.UID, request.Page);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
 
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Mail Send Success");
         return response;

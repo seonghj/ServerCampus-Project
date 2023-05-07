@@ -20,6 +20,7 @@ using System.Globalization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using SqlKata;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace DungeonFarming.Services;
 
@@ -270,7 +271,6 @@ public class GameDb : IGameDb
         }
     }
 
-
     public async Task<ErrorCode> SendAttendenceRewordsMail(string uid)
     {
         try
@@ -286,8 +286,9 @@ public class GameDb : IGameDb
                 MailCode = mailCode,
                 Title = "출석 보상",
                 Content = "출석 보상",
-                ExpirationDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                IsRead = false
+                ExpirationDate = DateTime.Now.AddDays(30).ToString("yyyy-MM-dd"),
+                IsRead = false,
+                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             });
             
             List<ItemCodeAndCount> items = new List<ItemCodeAndCount>();
@@ -314,6 +315,51 @@ public class GameDb : IGameDb
         }
     }
 
-    // 인앱결제
 
+    public async Task<ErrorCode> InAppProductSentToMail(string uid, Int32 productCode, string receiptCode)
+    {
+        try
+        {
+            var isExist = await _queryFactory.Query("Receipt").Where("ReceiptCode", receiptCode)
+                .ExistsAsync();
+            if (isExist == true)
+            {
+                return ErrorCode.ProductAlreadyPaid;
+            }
+
+            var result = await _queryFactory.Query("Receipt").InsertAsync(new
+            {
+                ReceiptCode = receiptCode,
+                UID = uid,
+                ProductCode = productCode
+            });
+
+            var mailCode = Service.Security.MakeMailKey();
+            result = await _queryFactory.Query("Mail").InsertAsync(new Mail
+            {
+                UID = uid,
+                MailCode = mailCode,
+                Title = "구매 상품",
+                Content = "구매 상품",
+                ExpirationDate = DateTime.Now.AddYears(1).ToString("yyyy-MM-dd"),
+                IsRead = false,
+                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            });
+            var itemList = _MasterData.InAppProductDict[productCode].Item;
+            result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
+            {
+                UID = uid,
+                MailCode = mailCode,
+                Items = JsonSerializer.Serialize<List<ItemCodeAndCount>>(itemList)
+            });
+
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Send Product Mail Error");
+            return ErrorCode.None;
+        }
+    }
 }

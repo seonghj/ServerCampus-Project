@@ -24,4 +24,6 @@ public interface IGameDb
     public Task<Tuple<ErrorCode, PlayerInfo>> LoginAndUpdateAttendenceDay(string accountid);
 
     public Task<ErrorCode> SendAttendenceRewordsMail(string uid);
+
+    public Task<ErrorCode> InAppProductSentToMail(string uid, Int32 productCode, string receiptCode);
 }

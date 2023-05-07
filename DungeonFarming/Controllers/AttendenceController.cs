@@ -31,7 +31,12 @@ public class Attendence : ControllerBase
     {
         var response = new AttendenceResponse();
 
-        response.Result = await _gameDb.SendAttendenceRewordsMail(request.UID);
+        var errorCode = await _gameDb.SendAttendenceRewordsMail(request.UID);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
 
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Attendence Rewords Success");
         return response;
