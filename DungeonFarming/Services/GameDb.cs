@@ -185,18 +185,40 @@ public class GameDb : IGameDb
     {
         try
         {
-            var isRead =  await _queryFactory.Query("Mail").Select("IsRead").FirstOrDefaultAsync<int>();
+            var playerInfo = await _queryFactory.Query("PlayerInfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
+
+            var isRead = await _queryFactory.Query("Mail").Select("IsRead").FirstOrDefaultAsync<int>();
             if (isRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
 
             var result = await _queryFactory.Query("MailItem").Select("Items")
                 .Where("UID", uid).Where("MailCode", mailcode)
                 .FirstOrDefaultAsync<string>();
 
-            List <ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
+            List<ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
             List<PlayerItem> ItemList = new List<PlayerItem>();
 
             foreach (var it in ItemInMail)
             {
+                if (it.ItemCode == 1)
+                {
+                    var updatePlayerGold = _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                        .AsUpdate(new { Gold = playerInfo.Gold + it.ItemCount });
+                    await _queryFactory.ExecuteAsync(updatePlayerGold);
+                }
+
+                if (it.ItemCode == 1 || it.ItemCode == 6)
+                {
+                    var itemInfo = await _queryFactory.Query("PlayerItem").Where("UID", uid)
+                        .Where("ItemCode", it.ItemCode).FirstOrDefaultAsync<PlayerItem>();
+
+                    if (itemInfo != null)
+                    {
+                        var updateItem = _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemInfo.ItemUniqueID)
+                        .AsUpdate(new { ItemCount = itemInfo.ItemCount + it.ItemCount });
+                        await _queryFactory.ExecuteAsync(updateItem);
+                        continue;
+                    }
+                }
                 Item itemMasterdata = _MasterData.getItemData(it.ItemCode);
                 ItemList.Add(new PlayerItem
                 {
@@ -227,27 +249,29 @@ public class GameDb : IGameDb
 
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
-        catch
+        catch(Exception ex) 
         {
+            Console.WriteLine(ex.ToString());
             _logger.ZLogError(
                    $"ErrorMessage: Get Item In Mail Error");
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.GetMailItemFail, null);
         }
     }
 
+
+    // 출석부
     public async Task<Tuple<ErrorCode, PlayerInfo>> LoginAndUpdateAttendenceDay(string accountid)
     {
         try
         {
             var Info = await _queryFactory.Query("playerinfo").Where("AccountID", accountid).FirstOrDefaultAsync<PlayerInfo>();
 
-            DateTime LastLoginDate = DateTime.ParseExact(Info.LastLoginTime, "dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+            DateTime LastLoginDate = DateTime.ParseExact(Info.LastLoginTime, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture);
 
-            TimeSpan DateDifference = DateTime.Today - LastLoginDate.Date;
-
+            TimeSpan DateDifference = DateTime.Now.Date - LastLoginDate.Date;
             Int32 NextAttendenceDay = 0;
 
-            if (DateDifference != TimeSpan.FromDays(1))
+            if (DateDifference.Days != 1)
             {
                 NextAttendenceDay = 1;
             }
@@ -275,9 +299,9 @@ public class GameDb : IGameDb
     {
         try
         {
-            var Info = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
+            var playerInfo = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
 
-            Attendance rewords = _MasterData.AttendanceDict[Info.ConsecutiveLoginDays];
+            Attendance rewords = _MasterData.AttendanceDict[playerInfo.ConsecutiveLoginDays];
 
             string mailCode = Service.Security.MakeMailKey();
             var result = await _queryFactory.Query("Mail").InsertAsync(new Mail
@@ -316,6 +340,7 @@ public class GameDb : IGameDb
     }
 
 
+    // 인앱 구매
     public async Task<ErrorCode> InAppProductSentToMail(string uid, Int32 productCode, string receiptCode)
     {
         try
