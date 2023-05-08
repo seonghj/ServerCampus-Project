@@ -32,6 +32,11 @@ public class GetMailItem : ControllerBase
         var response = new MailItemResponse();
 
         (var errorCode, response.Items) = await _gameDb.GetMailItemAsync(request.UID, request.MailCode);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
 
         _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Item In Mail Send Success");
         return response;

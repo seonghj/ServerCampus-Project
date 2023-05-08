@@ -67,10 +67,12 @@ public class GameDb : IGameDb
                 Hp = 50,
                 Mp = 60,
                 Gold = 10000,
-                LastLogin = DateTime.Now.ToString("yyyy-MM-dd"),
-                ConsecutiveLoginDays = 1,
+                LastLoginTime = DateTime.Now.Date,
+                ConsecutiveLoginDays = 0,
                 LastClearStage = 0
             });
+
+
 
             PlayerItem basicItem = new PlayerItem
             {
@@ -110,7 +112,7 @@ public class GameDb : IGameDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDb.InsertPlayer] ErrorCode : {ErrorCode.InsertPlayerItemFail}");
+                $"[GameDb.InsertItem] ErrorCode : {ErrorCode.InsertPlayerItemFail}");
             return ErrorCode.CreatePlayerFailException;
         }
     }
@@ -193,7 +195,7 @@ public class GameDb : IGameDb
         try
         {
             var Mails = await _queryFactory.Query("Mail").Where("UID", uid).Where("IsRead", 0)
-                .Where("ExpirationDate", ">=", DateTime.Now.ToString("yyyy-MM-dd"))
+                .Where("ExpirationDate", ">=", DateTime.Now.Date)
                 .OrderBy("CreatedAt")
                 .ForPage(page, PageSize).GetAsync<Mail>();
 
@@ -266,15 +268,14 @@ public class GameDb : IGameDb
         {
             (ErrorCode errorCode, PlayerInfo playerInfo) = await GetPlayerInfoIntoUID(uid);
 
-            var isRead = await _queryFactory.Query("Mail").Where("MailCode", mailcode)
-                .Select("IsRead").FirstOrDefaultAsync<int>();
-            if (isRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
+            var MailInfo = await _queryFactory.Query("Mail").Where("MailCode", mailcode)
+                .SelectRaw("IsRead, ExpirationDate").FirstOrDefaultAsync();
+            if (MailInfo.IsRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
+            if (MailInfo.ExpirationDate < DateTime.Now.Date) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.MailExpirationDateOut, null);
 
             var result = await _queryFactory.Query("MailItem").Select("Items")
                 .Where("UID", uid).Where("MailCode", mailcode)
                 .FirstOrDefaultAsync<string>();
-
-            Console.WriteLine(result);
 
             List<ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
             List<PlayerItem> ItemList = await MakeItemListFromMail(playerInfo, ItemInMail);

@@ -77,6 +77,7 @@ public enum ErrorCode : UInt16
     AlreadyGetMailItem = 4013,
     ProductAlreadyPaid = 4014,
     ReceiptInsertError = 4015,
+    MailExpirationDateOut = 4016,
     //Redis 5000-
     RedisDbConnectionFail = 5002
 }
