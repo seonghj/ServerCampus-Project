@@ -11,7 +11,7 @@ namespace DungeonFarming.Services;
 public interface IGameDb
 {
 
-    public Task<(ErrorCode, string)> InsertPlayer(string AccountId);
+    public Task<(ErrorCode, string)> InsertNewPlayer(string AccountId);
 
     public Task<ErrorCode> InsertPlayerItem(string UID, PlayerItem item);
 
@@ -25,7 +25,7 @@ public interface IGameDb
 
     public Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page);
 
-    public Task<List<PlayerItem>> MakeItemListFromMail(PlayerInfo playerInfo, List<ItemCodeAndCount> ItemInMail);
+    public Task<List<PlayerItem>> MakeItemListFromMail(PlayerInfo playerInfo, List<MailItem> ItemInMail);
 
     public Task<Tuple<ErrorCode, List<PlayerItem>>> GetMailItemAsync(string uid, string mailcode);
 
@@ -35,5 +35,5 @@ public interface IGameDb
 
     public Task<ErrorCode> InAppProductSentToMail(string uid, Int32 productCode, string receiptCode);
 
-    public Task<Tuple<ErrorCode, PlayerItem>> EnhanceItem(string uid, string ItemUniqueID);
+    public Task<Tuple<ErrorCode, PlayerItem, bool>> EnhanceItem(string uid, string itemUID);
 }

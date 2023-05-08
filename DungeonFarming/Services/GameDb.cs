@@ -37,8 +37,20 @@ public class GameDb : IGameDb
 
     string[] playerItemCols = new[] { "UID", "ItemCode", "ItemUniqueID", "ItemName"
                 , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
+    string[] MailItemCols = new[] { "UID", "MailCode", "ItemCode", "ItemCount"};
 
-    Int32 MoneyCode = 1;
+    Int32 MoneyAttributeCode = 5;
+    Int32 WeaponAttributeCode = 1;
+    Int32 ArmorAttributeCode = 2;
+    Int32 basicWeaponCode = 2;
+
+    Int32 basicLevel = 1;
+    Int32 basicExp = 0;
+    Int32 basicHp = 100;
+    Int32 basicMp = 100;
+    Int32 basicGold = 0;
+
+    Int32 mailPageSize = 20;
 
     public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig
         , IMasterData masterData)
@@ -53,7 +65,7 @@ public class GameDb : IGameDb
         _MasterData = masterData;
     }
 
-    public async Task<(ErrorCode, string)> InsertPlayer(string AccountId)
+    public async Task<(ErrorCode, string)> InsertNewPlayer(string AccountId)
     {
         var uid = Service.Security.CreateUID();
         try
@@ -62,28 +74,25 @@ public class GameDb : IGameDb
             {
                 AccountID = AccountId,
                 UID = uid,
-                Level = 1,
-                Exp = 100,
-                Hp = 50,
-                Mp = 60,
-                Gold = 10000,
+                Level = basicLevel,
+                Exp = basicExp,
+                Hp = basicExp,
+                Mp = basicMp,
+                Gold = basicGold,
                 LastLoginTime = DateTime.Now.Date,
                 ConsecutiveLoginDays = 0,
                 LastClearStage = 0
             });
 
-
-
             PlayerItem basicItem = new PlayerItem
             {
-                // ItemCode 2 = 작은 칼
                 UID = uid,
-                ItemCode = _MasterData.ItemDict[2].Code,
-                ItemUniqueID = Service.Security.MakeItemUniqueID(_MasterData.ItemDict[2].Code),
-                ItemName = _MasterData.ItemDict[2].Name,
-                Attack = _MasterData.ItemDict[2].Attack,
-                Defence = _MasterData.ItemDict[2].Defence,
-                Magic = _MasterData.ItemDict[2].Magic,
+                ItemCode = _MasterData.ItemDict[basicWeaponCode].Code,
+                ItemUniqueID = Service.Security.MakeItemUniqueID(basicWeaponCode),
+                ItemName = _MasterData.ItemDict[basicWeaponCode].Name,
+                Attack = _MasterData.ItemDict[basicWeaponCode].Attack,
+                Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
+                Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
                 EnhanceCount = 0,
                 ItemCount = 1
             };
@@ -191,13 +200,12 @@ public class GameDb : IGameDb
     // 우편함 기능
     public async Task<Tuple<ErrorCode, List<Mail>>> GetMailAsync(string uid, Int32 page)
     {
-        var PageSize = 20;
         try
         {
             var Mails = await _queryFactory.Query("Mail").Where("UID", uid).Where("IsRead", 0)
                 .Where("ExpirationDate", ">=", DateTime.Now.Date)
                 .OrderBy("CreatedAt")
-                .ForPage(page, PageSize).GetAsync<Mail>();
+                .ForPage(page, mailPageSize).GetAsync<Mail>();
 
             return new Tuple<ErrorCode, List<Mail>>(ErrorCode.None, Mails.ToList<Mail>());
         }
@@ -209,7 +217,7 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<List<PlayerItem>> MakeItemListFromMail(PlayerInfo playerInfo, List<ItemCodeAndCount> ItemInMail)
+    public async Task<List<PlayerItem>> MakeItemListFromMail(PlayerInfo playerInfo, List<MailItem> ItemInMail)
     {
         try
         {
@@ -218,7 +226,7 @@ public class GameDb : IGameDb
             foreach (var it in ItemInMail)
             {
 
-                if (it.ItemCode == MoneyCode)
+                if (it.ItemCode == MoneyAttributeCode)
                 {
                     var updatePlayerGold = _queryFactory.Query("PlayerInfo").Where("UID", uid)
                         .AsUpdate(new { Gold = playerInfo.Gold + it.ItemCount });
@@ -273,12 +281,11 @@ public class GameDb : IGameDb
             if (MailInfo.IsRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
             if (MailInfo.ExpirationDate < DateTime.Now.Date) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.MailExpirationDateOut, null);
 
-            var result = await _queryFactory.Query("MailItem").Select("Items")
+            var mailItems = await _queryFactory.Query("MailItem")
                 .Where("UID", uid).Where("MailCode", mailcode)
-                .FirstOrDefaultAsync<string>();
+                .GetAsync<MailItem>();
 
-            List<ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
-            List<PlayerItem> ItemList = await MakeItemListFromMail(playerInfo, ItemInMail);
+            List<PlayerItem> ItemList = await MakeItemListFromMail(playerInfo, mailItems.ToList<MailItem>());
 
             errorCode = await InsertItemListToPlayer(ItemList);
             var updateIsRead = _queryFactory.Query("Mail").Where("UID", uid).Where("MailCode", mailcode)
@@ -358,20 +365,14 @@ public class GameDb : IGameDb
                 IsRead = false,
                 CreatedAt = DateTime.Now,
             });
-            
-            List<ItemCodeAndCount> items = new List<ItemCodeAndCount>();
-            items.Add(new ItemCodeAndCount
-            {
-                ItemCode = rewords.ItemCode,
-                ItemCount = rewords.Count
-            });
 
             result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
             {
                 UID = uid,
                 MailCode = mailCode,
-                Items = JsonSerializer.Serialize<List<ItemCodeAndCount>>(items)
-            });
+                ItemCode = rewords.ItemCode,
+                ItemCount = rewords.Count
+            }) ;
 
             return ErrorCode.None;
         }
@@ -409,23 +410,25 @@ public class GameDb : IGameDb
                 UID = uid,
                 MailCode = mailCode,
                 Title = "구매 상품",
-                Content = "구매 상품",
+                Content = "구매 상품 " + productCode + "번",
                 ExpirationDate = DateTime.Now.AddYears(1).Date,
                 IsRead = false,
                 CreatedAt = DateTime.Now,
             });
             var itemList = _MasterData.InAppProductDict[productCode].Item;
-            result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
-            {
-                UID = uid,
-                MailCode = mailCode,
-                Items = JsonSerializer.Serialize<List<ItemCodeAndCount>>(itemList)
-            });
+
+            string[] MailItemCols = new[] { "UID", "MailCode", "ItemCode", "ItemCount" };
+            var insertList = itemList.Select(item => new object[]
+                {uid, mailCode, item.ItemCode, item.ItemCount}).ToArray();
+            Console.WriteLine(insertList.Length);
+            var insertQuery = _queryFactory.Query("MailItem").AsInsert(MailItemCols, insertList);
+            await _queryFactory.ExecuteAsync(insertQuery);
 
             return ErrorCode.None;
         }
-        catch
+        catch(Exception ex) 
         {
+            Console.WriteLine(ex.ToString());
             _logger.ZLogError(
                    $"ErrorMessage: Send Product Mail Error");
             return ErrorCode.None;
@@ -433,48 +436,55 @@ public class GameDb : IGameDb
     }
 
     // 강화
-    public async Task<Tuple<ErrorCode, PlayerItem>> EnhanceItem(string uid, string itemUID)
+    public async Task<Tuple<ErrorCode, PlayerItem, bool>> EnhanceItem(string uid, string itemUID)
     {
         try
         {
             var item = await _queryFactory.Query("playerItem").Where("UID", uid)
                 .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
 
-            if (item.EnhanceCount < _MasterData.ItemDict[item.ItemCode].EnhanceMaxCount)
+            var itemMasterData = _MasterData.ItemDict[item.ItemCode];
+            var enhanceResult = false;
+            if (item.EnhanceCount < itemMasterData.EnhanceMaxCount)
             {
                 item.EnhanceCount++;
                 Random random = new Random();
                 if (random.Next(10) < 3)
                 {
-                    item.Attack = (int)Math.Ceiling(item.Attack * 1.1);
-                    item.Defence = (int)Math.Ceiling(item.Defence * 1.1);
-                    item.Magic = (int)Math.Ceiling(item.Magic * 1.1);
+                    if (itemMasterData.Attribute == WeaponAttributeCode)
+                        item.Attack = (int)Math.Ceiling(item.Attack * 1.1);
+                    else if(itemMasterData.Attribute == ArmorAttributeCode)
+                        item.Defence = (int)Math.Ceiling(item.Defence * 1.1);
 
                     _logger.ZLogInformationWithPayload(new { UID = uid },
                    $"Enhance item success: attack: " + item.Attack + "/ Defence: " + item.Defence 
-                   + "/ Magic: " + item.Magic + "/ EnhanceCount: " + item.EnhanceCount);
+                    + "/ EnhanceCount: " + item.EnhanceCount);
+
+                    enhanceResult = true;
                 }
                 else
                 {
                     _logger.ZLogInformationWithPayload(new { UID = uid },
                    $"Enhance Fail / EnhanceCount"+ item.EnhanceCount);
+
+                    enhanceResult = false;
                 }
                 var result = await _queryFactory.Query("playerItem").Where("ItemUniqueID", itemUID)
                     .UpdateAsync(item);
-                return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, item);
+                return new Tuple<ErrorCode, PlayerItem, bool>(ErrorCode.None, item, enhanceResult);
             }
             else
             {
                 _logger.ZLogError(
                    $"ErrorMessage: Item Enhance Disable");
-                return new Tuple<ErrorCode, PlayerItem>(ErrorCode.ItemEnhanceDisable, null);
+                return new Tuple<ErrorCode, PlayerItem, bool>(ErrorCode.ItemEnhanceDisable, null, false);
             }
 
         }
         catch {
             _logger.ZLogError(
                    $"ErrorMessage: Enhance Item Error");
-            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.ItemEnhanceError, null);
+            return new Tuple<ErrorCode, PlayerItem, bool>(ErrorCode.ItemEnhanceError, null, false);
         }
     }
 

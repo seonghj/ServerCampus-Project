@@ -41,7 +41,7 @@ public class CreateAccount : ControllerBase
             return response;
         }
 
-        (errorCode, var uid) = await _gameDb.InsertPlayer(request.AccountID);
+        (errorCode, var uid) = await _gameDb.InsertNewPlayer(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

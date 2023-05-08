@@ -16,7 +16,10 @@ public class Mail
 
 public class MailItem
 {
+    public Int32 No { get; set; }
     public string UID { get; set; }
     public string MailCode { get; set; }
-    public string Items { get; set; }
+    public Int32 ItemCode { get; set; }
+
+    public Int32 ItemCount { get; set; }
 }

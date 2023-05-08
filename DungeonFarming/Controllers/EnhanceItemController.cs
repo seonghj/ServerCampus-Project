@@ -31,14 +31,14 @@ public class EnhanceItem : ControllerBase
     {
         var response = new EnhanceItemResponse();
 
-        (var errorCode, response.ItemInfo )= await _gameDb.EnhanceItem(request.UID, request.ItemUniqueID);
+        (var errorCode, response.ItemInfo, response.EnhanceResult) = await _gameDb.EnhanceItem(request.UID, request.ItemUniqueID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Enhance Item Success");
+        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Try Enhance Item Success");
         return response;
     }
 
