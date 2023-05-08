@@ -21,6 +21,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using SqlKata;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
+using static Humanizer.In;
 
 namespace DungeonFarming.Services;
 
@@ -33,6 +34,11 @@ public class GameDb : IGameDb
     IDbConnection _dbConn;
     SqlKata.Compilers.MySqlCompiler _compiler;
     QueryFactory _queryFactory;
+
+    string[] playerItemCols = new[] { "UID", "ItemCode", "ItemUniqueID", "ItemName"
+                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
+
+    Int32 MoneyCode = 1;
 
     public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig
         , IMasterData masterData)
@@ -109,23 +115,27 @@ public class GameDb : IGameDb
         }
     }
 
-    private void GameDBOpen()
+    public async Task<ErrorCode> InsertItemListToPlayer(List<PlayerItem> itemList)
     {
-        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+        try
+        {
+            if (itemList.Count() != 0)
+            {
+                var insertData = itemList.Select(item => new object[]
+                { item.UID, item.ItemCode, item.ItemUniqueID, item.ItemName, item.Attack,
+                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount}).ToArray();
 
-        _dbConn.Open();
-    }
-
-    private void GameDBClose()
-    {
-        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
-
-        _dbConn.Close();
-    }
-
-    public void Dispose()
-    {
-        GameDBClose();
+                var insertItemToPlayer = _queryFactory.Query("PlayerItem").AsInsert(playerItemCols, insertData);
+                await _queryFactory.ExecuteAsync(insertItemToPlayer);
+            }
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Insert Item List to Player Error");
+            return ErrorCode.InsertPlayerItemFail;
+        }
     }
 
     public async Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfo(string AccountId)
@@ -139,7 +149,23 @@ public class GameDb : IGameDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
-                $"[GameDB.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
+                $"[GameDB.GetPlayer] ErrorCode : {ErrorCode.GetPlayerInfoFail}");
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, null);
+        }
+    }
+
+    public async Task<Tuple<ErrorCode, PlayerInfo>> GetPlayerInfoIntoUID(string uid)
+    {
+        try
+        {
+            var PlayerInfomation = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
+
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, PlayerInfomation);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                $"[GameDB.GetPlayer] ErrorCode : {ErrorCode.GetPlayerInfoFail}");
             return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, null);
         }
     }
@@ -181,35 +207,26 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<PlayerItem>>> GetMailItemAsync(string uid, string mailcode)
+    public async Task<List<PlayerItem>> MakeItemListFromMail(PlayerInfo playerInfo, List<ItemCodeAndCount> ItemInMail)
     {
         try
         {
-            var playerInfo = await _queryFactory.Query("PlayerInfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
-
-            var isRead = await _queryFactory.Query("Mail").Select("IsRead").FirstOrDefaultAsync<int>();
-            if (isRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
-
-            var result = await _queryFactory.Query("MailItem").Select("Items")
-                .Where("UID", uid).Where("MailCode", mailcode)
-                .FirstOrDefaultAsync<string>();
-
-            List<ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
             List<PlayerItem> ItemList = new List<PlayerItem>();
-
+            var uid = playerInfo.UID;
             foreach (var it in ItemInMail)
             {
-                if (it.ItemCode == 1)
+
+                if (it.ItemCode == MoneyCode)
                 {
                     var updatePlayerGold = _queryFactory.Query("PlayerInfo").Where("UID", uid)
                         .AsUpdate(new { Gold = playerInfo.Gold + it.ItemCount });
                     await _queryFactory.ExecuteAsync(updatePlayerGold);
                 }
-
-                if (it.ItemCode == 1 || it.ItemCode == 6)
+                if (_MasterData.ItemDict[it.ItemCode].CanOverlap == true)
                 {
                     var itemInfo = await _queryFactory.Query("PlayerItem").Where("UID", uid)
                         .Where("ItemCode", it.ItemCode).FirstOrDefaultAsync<PlayerItem>();
+
 
                     if (itemInfo != null)
                     {
@@ -223,8 +240,8 @@ public class GameDb : IGameDb
                 ItemList.Add(new PlayerItem
                 {
                     UID = uid,
-                    ItemUniqueID = Service.Security.MakeItemUniqueID(it.ItemCode),
                     ItemCode = it.ItemCode,
+                    ItemUniqueID = Service.Security.MakeItemUniqueID(it.ItemCode),
                     ItemName = itemMasterdata.Name,
                     Attack = itemMasterdata.Attack,
                     Defence = itemMasterdata.Defence,
@@ -233,25 +250,43 @@ public class GameDb : IGameDb
                     ItemCount = it.ItemCount
                 });
             }
-            var insertData = ItemList.Select(item => new object[]
-            { item.UID, item.ItemCode, item.ItemUniqueID, item.ItemName, item.Attack,
-                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount}).ToArray();
+            return ItemList;
+        }
+        catch {
+            _logger.ZLogError(
+                   $"ErrorMessage: Update CanOverlap Item Count Error");
+            return null;
+        }
 
-            var insertDataCols = new[] { "UID", "ItemCode", "ItemUniqueID", "ItemName"
-                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
+    }
 
-            var Query = _queryFactory.Query("PlayerItem").AsInsert(insertDataCols, insertData);
-            var res = await _queryFactory.ExecuteAsync(Query);
+    public async Task<Tuple<ErrorCode, List<PlayerItem>>> GetMailItemAsync(string uid, string mailcode)
+    {
+        try
+        {
+            (ErrorCode errorCode, PlayerInfo playerInfo) = await GetPlayerInfoIntoUID(uid);
 
-            Query = _queryFactory.Query("Mail").Where("UID", uid).Where("MailCode", mailcode)
-                .AsUpdate(new { IsRead = 1 });
-            res = await _queryFactory.ExecuteAsync(Query);
+            var isRead = await _queryFactory.Query("Mail").Where("MailCode", mailcode)
+                .Select("IsRead").FirstOrDefaultAsync<int>();
+            if (isRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
 
+            var result = await _queryFactory.Query("MailItem").Select("Items")
+                .Where("UID", uid).Where("MailCode", mailcode)
+                .FirstOrDefaultAsync<string>();
+
+            Console.WriteLine(result);
+
+            List<ItemCodeAndCount> ItemInMail = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(result);
+            List<PlayerItem> ItemList = await MakeItemListFromMail(playerInfo, ItemInMail);
+
+            errorCode = await InsertItemListToPlayer(ItemList);
+            var updateIsRead = _queryFactory.Query("Mail").Where("UID", uid).Where("MailCode", mailcode)
+                    .AsUpdate(new { IsRead = 1 });
+            await _queryFactory.ExecuteAsync(updateIsRead);
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, ItemList);
         }
-        catch(Exception ex) 
+        catch
         {
-            Console.WriteLine(ex.ToString());
             _logger.ZLogError(
                    $"ErrorMessage: Get Item In Mail Error");
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.GetMailItemFail, null);
@@ -264,28 +299,33 @@ public class GameDb : IGameDb
     {
         try
         {
-            var Info = await _queryFactory.Query("playerinfo").Where("AccountID", accountid).FirstOrDefaultAsync<PlayerInfo>();
+            (ErrorCode errorCode, PlayerInfo playerInfo) = await GetPlayerInfo(accountid);
+            if (errorCode != ErrorCode.None)
+            {
+                return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.PlayerLoginFail, null);
+            }
 
-            DateTime LastLoginDate = DateTime.ParseExact(Info.LastLoginTime, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture);
-
-            TimeSpan DateDifference = DateTime.Now.Date - LastLoginDate.Date;
+            TimeSpan DateDifference = DateTime.Now.Date - playerInfo.LastLoginTime.Date;
             Int32 NextAttendenceDay = 0;
 
             if (DateDifference.Days != 1)
             {
                 NextAttendenceDay = 1;
             }
-            else NextAttendenceDay = Info.ConsecutiveLoginDays + 1;
+            else NextAttendenceDay = playerInfo.ConsecutiveLoginDays + 1;
 
+
+            
             var result = await _queryFactory.Query("PlayerInfo").Where("AccountID", accountid)
                     .UpdateAsync(new
                     {
                         ConsecutiveLoginDays = NextAttendenceDay,
-                        LastLoginTime = DateTime.Now
+                        LastLoginTime = DateTime.Now.Date
                     });
-            Info.LastLoginTime = DateTime.Now.ToString();
-            Info.ConsecutiveLoginDays = NextAttendenceDay;
-            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, Info);
+            playerInfo.LastLoginTime = DateTime.Now.Date;
+            playerInfo.ConsecutiveLoginDays = NextAttendenceDay;
+
+            return new Tuple<ErrorCode, PlayerInfo>(ErrorCode.None, playerInfo);
         }
         catch
         {
@@ -299,8 +339,11 @@ public class GameDb : IGameDb
     {
         try
         {
-            var playerInfo = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
-
+            (ErrorCode errorCode, PlayerInfo playerInfo) = await GetPlayerInfoIntoUID(uid);
+            if(errorCode != ErrorCode.None)
+            {
+                return ErrorCode.SendAttendenceRewordsFail;
+            }
             Attendance rewords = _MasterData.AttendanceDict[playerInfo.ConsecutiveLoginDays];
 
             string mailCode = Service.Security.MakeMailKey();
@@ -309,10 +352,10 @@ public class GameDb : IGameDb
                 UID = uid,
                 MailCode = mailCode,
                 Title = "출석 보상",
-                Content = "출석 보상",
-                ExpirationDate = DateTime.Now.AddDays(30).ToString("yyyy-MM-dd"),
+                Content = playerInfo.ConsecutiveLoginDays.ToString() + "일 출석 보상",
+                ExpirationDate = DateTime.Now.AddDays(30).Date,
                 IsRead = false,
-                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                CreatedAt = DateTime.Now,
             });
             
             List<ItemCodeAndCount> items = new List<ItemCodeAndCount>();
@@ -335,7 +378,7 @@ public class GameDb : IGameDb
         {
             _logger.ZLogError(
                    $"ErrorMessage: Send Attendence Rewords Error");
-            return ErrorCode.None;
+            return ErrorCode.SendAttendenceRewordsFail;
         }
     }
 
@@ -366,9 +409,9 @@ public class GameDb : IGameDb
                 MailCode = mailCode,
                 Title = "구매 상품",
                 Content = "구매 상품",
-                ExpirationDate = DateTime.Now.AddYears(1).ToString("yyyy-MM-dd"),
+                ExpirationDate = DateTime.Now.AddYears(1).Date,
                 IsRead = false,
-                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                CreatedAt = DateTime.Now,
             });
             var itemList = _MasterData.InAppProductDict[productCode].Item;
             result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
@@ -387,4 +430,71 @@ public class GameDb : IGameDb
             return ErrorCode.None;
         }
     }
+
+    // 강화
+    public async Task<Tuple<ErrorCode, PlayerItem>> EnhanceItem(string uid, string itemUID)
+    {
+        try
+        {
+            var item = await _queryFactory.Query("playerItem").Where("UID", uid)
+                .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
+
+            if (item.EnhanceCount < _MasterData.ItemDict[item.ItemCode].EnhanceMaxCount)
+            {
+                item.EnhanceCount++;
+                Random random = new Random();
+                if (random.Next(10) < 3)
+                {
+                    item.Attack = (int)Math.Ceiling(item.Attack * 1.1);
+                    item.Defence = (int)Math.Ceiling(item.Defence * 1.1);
+                    item.Magic = (int)Math.Ceiling(item.Magic * 1.1);
+
+                    _logger.ZLogInformationWithPayload(new { UID = uid },
+                   $"Enhance item success: attack: " + item.Attack + "/ Defence: " + item.Defence 
+                   + "/ Magic: " + item.Magic + "/ EnhanceCount: " + item.EnhanceCount);
+                }
+                else
+                {
+                    _logger.ZLogInformationWithPayload(new { UID = uid },
+                   $"Enhance Fail / EnhanceCount"+ item.EnhanceCount);
+                }
+                var result = await _queryFactory.Query("playerItem").Where("ItemUniqueID", itemUID)
+                    .UpdateAsync(item);
+                return new Tuple<ErrorCode, PlayerItem>(ErrorCode.None, item);
+            }
+            else
+            {
+                _logger.ZLogError(
+                   $"ErrorMessage: Item Enhance Disable");
+                return new Tuple<ErrorCode, PlayerItem>(ErrorCode.ItemEnhanceDisable, null);
+            }
+
+        }
+        catch {
+            _logger.ZLogError(
+                   $"ErrorMessage: Enhance Item Error");
+            return new Tuple<ErrorCode, PlayerItem>(ErrorCode.ItemEnhanceError, null);
+        }
+    }
+
+
+    private void GameDBOpen()
+    {
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+
+        _dbConn.Open();
+    }
+
+    private void GameDBClose()
+    {
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+
+        _dbConn.Close();
+    }
+
+    public void Dispose()
+    {
+        GameDBClose();
+    }
 }
+

@@ -20,7 +20,7 @@ public class PlayerInfo
 
     public Int32 Gold { get; set; }
 
-    public string LastLoginTime { get; set; }
+    public DateTime LastLoginTime { get; set; }
 
     public Int32 ConsecutiveLoginDays { get; set; }    
 

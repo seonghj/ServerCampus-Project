@@ -8,10 +8,10 @@ public class Mail
     public string MailCode { get; set; }
     public string Title { get; set; }
     public string Content { get; set; }
-    public string ExpirationDate { get; set; }
+    public DateTime ExpirationDate { get; set; }
     public bool IsRead { get; set; }
 
-    public string CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class MailItem

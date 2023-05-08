@@ -14,6 +14,8 @@ public class Item
     public Int32 Defence { get; set; } = 0;
     public Int32 Magic { get; set; } = 0;
     public Int32 EnhanceMaxCount { get; set; } = 0;
+
+    public bool CanOverlap = false;
 }
 
 public class ItemCodeAndCount

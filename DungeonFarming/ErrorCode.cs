@@ -57,13 +57,17 @@ public enum ErrorCode : UInt16
     PlayerHairCodeMisMatch = 3019,
     PlayerCheckCodeError = 3010,
     PlayerLookTypeError = 3011,
+    ItemEnhanceError = 3012,
+    ItemEnhanceDisable = 3013,
 
-    PlayerStatusChangeFail = 3012,
-    PlayerIsExistGame = 3013,
-    GetPlayerListFail = 3014,
+    PlayerStatusChangeFail = 3020,
+    PlayerIsExistGame = 3021,
+    GetPlayerListFail = 3022,
 
-    InsertPlayerItemFail = 3015,
-    PlayerLoginFail = 3016,
+    InsertPlayerItemFail = 3030,
+    PlayerLoginFail = 3031,
+
+    SendAttendenceRewordsFail = 3040,
 
     //GameDb 4000~ 
     GetGameDbConnectionFail = 4002,
