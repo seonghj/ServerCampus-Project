@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace DungeonFarming.Services;
 
-public interface IAccountDb
+public interface IAccountDb : IDisposable
 {
     public Task<ErrorCode> CreateAccountAsync(string AccountId, string pw);
 

@@ -8,7 +8,7 @@ using DungeonFarming.ResponseFormat;
 
 namespace DungeonFarming.Services;
 
-public interface IGameDb
+public interface IGameDb : IDisposable
 {
 
     public Task<(ErrorCode, string)> InsertNewPlayer(string AccountId);
