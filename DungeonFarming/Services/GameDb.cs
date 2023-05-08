@@ -76,7 +76,7 @@ public class GameDb : IGameDb
                 UID = uid,
                 Level = basicLevel,
                 Exp = basicExp,
-                Hp = basicExp,
+                Hp = basicHp,
                 Mp = basicMp,
                 Gold = basicGold,
                 LastLoginTime = DateTime.Now.Date,
@@ -225,14 +225,14 @@ public class GameDb : IGameDb
             var uid = playerInfo.UID;
             foreach (var it in ItemInMail)
             {
-
-                if (it.ItemCode == MoneyAttributeCode)
+                var itemMasterData = _MasterData.ItemDict[it.ItemCode];
+                if (itemMasterData.Attribute == MoneyAttributeCode)
                 {
                     var updatePlayerGold = _queryFactory.Query("PlayerInfo").Where("UID", uid)
                         .AsUpdate(new { Gold = playerInfo.Gold + it.ItemCount });
                     await _queryFactory.ExecuteAsync(updatePlayerGold);
                 }
-                if (_MasterData.ItemDict[it.ItemCode].CanOverlap == true)
+                if (itemMasterData.CanOverlap == true)
                 {
                     var itemInfo = await _queryFactory.Query("PlayerItem").Where("UID", uid)
                         .Where("ItemCode", it.ItemCode).FirstOrDefaultAsync<PlayerItem>();
@@ -465,7 +465,7 @@ public class GameDb : IGameDb
                 else
                 {
                     _logger.ZLogInformationWithPayload(new { UID = uid },
-                   $"Enhance Fail / EnhanceCount"+ item.EnhanceCount);
+                   $"Enhance Fail / EnhanceCount: "+ item.EnhanceCount);
 
                     enhanceResult = false;
                 }
