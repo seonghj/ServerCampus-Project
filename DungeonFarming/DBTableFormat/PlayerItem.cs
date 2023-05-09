@@ -13,4 +13,6 @@ public class PlayerItem
     public Int32 Magic { get; set; }
     public Int32 EnhanceCount { get; set; }
     public Int32 ItemCount { get; set; }
+
+    public bool IsBreak { get; set; }
 }

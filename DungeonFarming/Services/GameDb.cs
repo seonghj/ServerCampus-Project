@@ -36,7 +36,7 @@ public class GameDb : IGameDb
     QueryFactory _queryFactory;
 
     string[] playerItemCols = new[] { "UID", "ItemCode", "ItemUniqueID", "ItemName"
-                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
+                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount", "IsBreak"};
     string[] MailItemCols = new[] { "UID", "MailCode", "ItemCode", "ItemCount"};
 
     Int32 MoneyAttributeCode = 5;
@@ -94,7 +94,8 @@ public class GameDb : IGameDb
                 Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
                 Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
                 EnhanceCount = 0,
-                ItemCount = 1
+                ItemCount = 1,
+                IsBreak = false
             };
 
             Result = await _queryFactory.Query("PlayerItem").InsertAsync(basicItem);
@@ -134,7 +135,7 @@ public class GameDb : IGameDb
             {
                 var insertData = itemList.Select(item => new object[]
                 { item.UID, item.ItemCode, item.ItemUniqueID, item.ItemName, item.Attack,
-                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount}).ToArray();
+                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount, item.IsBreak}).ToArray();
 
                 var insertItemToPlayer = _queryFactory.Query("PlayerItem").AsInsert(playerItemCols, insertData);
                 await _queryFactory.ExecuteAsync(insertItemToPlayer);
@@ -185,7 +186,8 @@ public class GameDb : IGameDb
     {
         try
         {
-            var PlayerItems = await _queryFactory.Query("playerItem").Where("UID", uid).GetAsync<PlayerItem>();
+            var PlayerItems = await _queryFactory.Query("playerItem")
+                .Where("UID", uid).Where("IsBreak", false).GetAsync<PlayerItem>();
             
             return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.None, PlayerItems.ToList<PlayerItem>());
         }
@@ -257,7 +259,8 @@ public class GameDb : IGameDb
                     Defence = itemMasterdata.Defence,
                     Magic = itemMasterdata.Magic,
                     EnhanceCount = 0,
-                    ItemCount = it.ItemCount
+                    ItemCount = it.ItemCount,
+                    IsBreak = false,
                 });
             }
             return ItemList;
@@ -441,7 +444,7 @@ public class GameDb : IGameDb
         try
         {
             var item = await _queryFactory.Query("playerItem").Where("UID", uid)
-                .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
+                .Where("ItemUniqueID", itemUID).Where("IsBreak", false).FirstOrDefaultAsync<PlayerItem>();
 
             var itemMasterData = _MasterData.ItemDict[item.ItemCode];
             var enhanceResult = false;
@@ -456,7 +459,7 @@ public class GameDb : IGameDb
                     else if(itemMasterData.Attribute == ArmorAttributeCode)
                         item.Defence = (int)Math.Ceiling(item.Defence * 1.1);
 
-                    _logger.ZLogInformationWithPayload(new { UID = uid },
+                    _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
                    $"Enhance item success: attack: " + item.Attack + "/ Defence: " + item.Defence 
                     + "/ EnhanceCount: " + item.EnhanceCount);
 
@@ -464,8 +467,10 @@ public class GameDb : IGameDb
                 }
                 else
                 {
-                    _logger.ZLogInformationWithPayload(new { UID = uid },
-                   $"Enhance Fail / EnhanceCount: "+ item.EnhanceCount);
+                    item.IsBreak = true;
+
+                    _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
+                   $"Enhance Fail");
 
                     enhanceResult = false;
                 }
