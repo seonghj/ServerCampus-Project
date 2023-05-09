@@ -37,7 +37,7 @@ public class RequestMail : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Mail Send Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Mail Send Success");
         return response;
     }
 }

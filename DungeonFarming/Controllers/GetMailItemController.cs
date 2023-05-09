@@ -38,7 +38,7 @@ public class GetMailItem : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Item In Mail Send Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Item In Mail Send Success");
         return response;
     }
 }

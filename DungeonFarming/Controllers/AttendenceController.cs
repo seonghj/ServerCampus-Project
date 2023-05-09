@@ -38,7 +38,7 @@ public class Attendence : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Attendence Rewords Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Attendence Rewords Success");
         return response;
     }
 }

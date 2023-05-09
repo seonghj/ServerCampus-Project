@@ -42,21 +42,6 @@ public enum ErrorCode : UInt16
     InvalidPlayerInfo = 3008,
     GetPlayerItemsFail = 3009,
     PlayerCountOver = 3010,
-    PlayerArmorTypeMisMatch = 3011,
-    PlayerHelmetTypeMisMatch = 3012,
-    PlayerCloakTypeMisMatch = 3012,
-    PlayerDressTypeMisMatch = 3013,
-    PlayerPantsTypeMisMatch = 3012,
-    PlayerMustacheTypeMisMatch = 3012,
-    PlayerArmorCodeMisMatch = 3013,
-    PlayerHelmetCodeMisMatch = 3014,
-    PlayerCloakCodeMisMatch = 3015,
-    PlayerDressCodeMisMatch = 3016,
-    PlayerPantsCodeMisMatch = 3017,
-    PlayerMustacheCodeMisMatch = 3018,
-    PlayerHairCodeMisMatch = 3019,
-    PlayerCheckCodeError = 3010,
-    PlayerLookTypeError = 3011,
     ItemEnhanceError = 3012,
     ItemEnhanceDisable = 3013,
 
@@ -79,5 +64,8 @@ public enum ErrorCode : UInt16
     ReceiptInsertError = 4015,
     MailExpirationDateOut = 4016,
     //Redis 5000-
-    RedisDbConnectionFail = 5002
+    RedisDbConnectionFail = 5002,
+
+    // InStage 6000~
+    DisableStartStage = 6001
 }

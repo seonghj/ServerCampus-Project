@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Threading.Tasks;
 using CloudStructures.Structures;
 using DungeonFarming.DBTableFormat;
@@ -13,15 +12,8 @@ using Microsoft.Extensions.Options;
 using MySqlConnector;
 using SqlKata.Execution;
 using ZLogger;
-using System.Collections;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Http;
-using System.Globalization;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using SqlKata;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
-using static Humanizer.In;
+
 
 namespace DungeonFarming.Services;
 
@@ -281,6 +273,7 @@ public class GameDb : IGameDb
 
             var MailInfo = await _queryFactory.Query("Mail").Where("MailCode", mailcode)
                 .SelectRaw("IsRead, ExpirationDate").FirstOrDefaultAsync();
+
             if (MailInfo.IsRead == 1) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.AlreadyGetMailItem, null);
             if (MailInfo.ExpirationDate < DateTime.Now.Date) return new Tuple<ErrorCode, List<PlayerItem>>(ErrorCode.MailExpirationDateOut, null);
 
@@ -306,7 +299,7 @@ public class GameDb : IGameDb
 
 
     // 출석부
-    public async Task<Tuple<ErrorCode, PlayerInfo>> LoginAndUpdateAttendenceDay(string accountid)
+    public async Task<Tuple<ErrorCode, PlayerInfo>> UpdateAttendenceDay(string accountid)
     {
         try
         {
@@ -429,9 +422,8 @@ public class GameDb : IGameDb
 
             return ErrorCode.None;
         }
-        catch(Exception ex) 
+        catch
         {
-            Console.WriteLine(ex.ToString());
             _logger.ZLogError(
                    $"ErrorMessage: Send Product Mail Error");
             return ErrorCode.None;
@@ -493,6 +485,28 @@ public class GameDb : IGameDb
         }
     }
 
+
+    public async Task<Tuple<ErrorCode, bool>> CheckAbleStartStage(string uid, Int32 stageCode)
+    {
+        try
+        {
+            PlayerInfo playerInfo = await _queryFactory.Query("PlayerInfo")
+                .Where("UID", uid).FirstOrDefaultAsync();
+
+            if (playerInfo == null)
+            {
+                return new Tuple<ErrorCode, bool>(ErrorCode.GetPlayerInfoFail, false);
+            }
+
+            if 
+        }
+        catch
+        {
+            _logger.ZLogError(
+                   $"ErrorMessage: Check Start Stage Error");
+            return new Tuple<ErrorCode, bool>(ErrorCode.DisableStartStage, false);
+        }
+    }
 
     private void GameDBOpen()
     {

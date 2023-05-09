@@ -38,7 +38,7 @@ public class EnhanceItem : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(EventIdDic[EventType.Login], new { UID = request.UID }, "Try Enhance Item Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Try Enhance Item Success");
         return response;
     }
 

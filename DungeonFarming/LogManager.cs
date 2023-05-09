@@ -10,6 +10,17 @@ public static class LogManager
         Login = 201,
         LoginAddRedis = 202,
         CreateCharacter = 205,
+
+        Notice = 300,
+
+        SendMailList = 400,
+        GetItemInMail = 401,
+
+        BuyInAppProduct = 500,
+
+        EnhanceItem = 600,
+
+        StartStage = 700
     }
 
     private static ILoggerFactory s_loggerFactory;
