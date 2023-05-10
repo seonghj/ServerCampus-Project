@@ -2,7 +2,7 @@
 
 public class Receipt
 {
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     public Int32 ProductCode { get; set; }
 

@@ -6,8 +6,8 @@ namespace DungeonFarming.RequestFormat;
 public class MailItemRequest : AuthRequest
 {
     [Required]
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     [Required]
-    public string MailCode { get; set; }
+    public Int32 MailCode { get; set; }
 }

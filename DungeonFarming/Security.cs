@@ -39,23 +39,8 @@ public class Security
         return new string(tmp.Select(x => AllowableCharacters[x % AllowableCharacters.Length]).ToArray());
     }
 
-    public static string CreateUID()
-    {
-        return loginUID + DateTime.Now.ToString("MMssddmmyyyyhh");
-    }
-
     public static string MakePlayerLockKey(string id)
     {
         return PlayerLockKey + id;
-    }
-
-    public static string MakeItemUniqueID(Int32 itemCode)
-    {
-        return "item"+ itemCode.ToString() + "_" + DateTime.Now.ToString("yyyyhhMMssddmm");
-    }
-
-    public static string MakeMailKey()
-    {
-        return "Mail_" + DateTime.Now.ToString("ddyyyyhhssMMmm");
     }
 }

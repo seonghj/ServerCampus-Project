@@ -37,7 +37,7 @@ public class StageStart : ControllerBase
             return response;
         }
 
-        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Check Start Stage Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID , Result = response.CanStart}, "Check Start Stage Success");
         return response;
     }
 }

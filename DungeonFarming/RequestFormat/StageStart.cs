@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DungeonFarming.RequestFormat;
 
-public class StageStart : AuthRequest
+public class StageStartRequest : AuthRequest
 {
     [Required]
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     [Required]
     public Int32 StageCode { get; set; }

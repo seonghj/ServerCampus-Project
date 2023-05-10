@@ -53,6 +53,7 @@ public enum ErrorCode : UInt16
     PlayerLoginFail = 3031,
 
     SendAttendenceRewordsFail = 3040,
+    UpdateAttendenceDayFail = 3041,
 
     //GameDb 4000~ 
     GetGameDbConnectionFail = 4002,
@@ -67,5 +68,6 @@ public enum ErrorCode : UInt16
     RedisDbConnectionFail = 5002,
 
     // InStage 6000~
-    DisableStartStage = 6001
+    CheckStartStageError = 6001,
+    DisableStartStage = 6002
 }

@@ -56,7 +56,7 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    public async Task<Tuple<ErrorCode, AuthPlayer>> GetPlayerAuthAsync(string accountid)
+    public async Task<(ErrorCode, AuthPlayer)> GetPlayerAuthAsync(string accountid)
     {
         try
         {
@@ -66,19 +66,19 @@ public class RedisDb : IRedisDb
             {
                 s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
-                return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.LoginFailAddRedis, null);
+                return (ErrorCode.LoginFailAddRedis, null);
             }
-            return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.None, result.Value);
+            return (ErrorCode.None, result.Value);
         }
         catch
         {
             s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: ID Not Exist");
-            return new Tuple<ErrorCode, AuthPlayer>(ErrorCode.LoginFailAddRedis, null);
+            return (ErrorCode.LoginFailAddRedis, null);
         }
     }
 
-    public async Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken)
+    public async Task<(ErrorCode, bool)> CheckPlayerAuthAsync(string accountid, string playerAuthToken)
     {
         try
         {
@@ -88,26 +88,26 @@ public class RedisDb : IRedisDb
             {
                 s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
-                return new Tuple<ErrorCode, bool>(ErrorCode.AuthTokenNotFound, false);
+                return (ErrorCode.AuthTokenNotFound, false);
             }
             if (result.Value.AuthToken != playerAuthToken)
             {
                 s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
-                return new Tuple<ErrorCode, bool>(ErrorCode.AuthTokenMismatch, false);
+                return (ErrorCode.AuthTokenMismatch, false);
             }
-            return new Tuple<ErrorCode, bool>(ErrorCode.None, true);
+            return (ErrorCode.None, true);
         }
         catch
         {
             s_logger.ZLogError(
                    $"ID:{accountid}, ErrorMessage: Redis Connection Error");
-            return new Tuple<ErrorCode, bool>(ErrorCode.RedisDbConnectionFail, false);
+            return (ErrorCode.RedisDbConnectionFail, false);
         }
     }
 
     // 공지
-    public async Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey)
+    public async Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey)
     {
 
         try
@@ -118,7 +118,7 @@ public class RedisDb : IRedisDb
             {
                 s_logger.ZLogError(
                    $"ErrorMessage: Can Not Get Notification, RedisDictionary Get Error");
-                return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.AuthTokenNotFound, null);
+                return (ErrorCode.AuthTokenNotFound, null);
             }
             var NoticeList = new List<NoticeContent>();
             foreach (var item in result)
@@ -131,13 +131,13 @@ public class RedisDb : IRedisDb
                 });
             }
 
-            return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.None, NoticeList);
+            return (ErrorCode.None, NoticeList);
         }
         catch
         {
             s_logger.ZLogError(
                    $"ErrorMessage: Redis Connection Error");
-            return new Tuple<ErrorCode, List<NoticeContent>>(ErrorCode.RedisDbConnectionFail, null);
+            return (ErrorCode.RedisDbConnectionFail, null);
         }
     }
 

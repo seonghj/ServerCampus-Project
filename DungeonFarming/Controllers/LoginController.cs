@@ -55,8 +55,7 @@ public class Login : ControllerBase
             return response;
         }
 
-
-        (errorCode, response.PlayerInfomation) = await _gameDb.UpdateAttendenceDay(request.AccountID);
+        (errorCode, response.PlayerInfomation) = await _gameDb.GetPlayerInfo(request.AccountID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

@@ -6,8 +6,8 @@ namespace DungeonFarming.RequestFormat;
 public class EnhanceItemRequest : AuthRequest
 {
     [Required]
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     [Required]
-    public string ItemUniqueID { get; set; }
+    public Int32 ItemUniqueID { get; set; }
 }

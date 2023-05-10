@@ -6,5 +6,5 @@ namespace DungeonFarming.RequestFormat;
 public class AttendenceRequest : AuthRequest
 {
     [Required]
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 }

@@ -5,7 +5,7 @@ namespace DungeonFarming.RequestFormat;
 public class BuyProductRequest : AuthRequest
 {
     [Required]
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     public Int32 ProductCode { get; set; }
 

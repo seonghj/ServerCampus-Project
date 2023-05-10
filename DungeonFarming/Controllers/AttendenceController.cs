@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
+using System.Security.Cryptography;
 
 namespace DungeonFarming.Controllers;
 

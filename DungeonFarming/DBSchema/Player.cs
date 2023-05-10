@@ -7,12 +7,11 @@ public class PlayerInfo
 { 
     public string AccountID { get; set; }
 
-    public string UID { get; set; }
+    public Int32 UID { get; set; }
 
     public Int32 Level { get; set; }
 
     public Int32 Exp { get; set; }
-
 
     public Int32 Hp { get; set; }
 

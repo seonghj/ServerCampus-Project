@@ -11,11 +11,11 @@ public interface IRedisDb
     public void Init(string address);
     public Task<ErrorCode> InsertPlayerAuthAsync(string accountid);
 
-    public Task<Tuple<ErrorCode, AuthPlayer>> GetPlayerAuthAsync(string accountid);
+    public Task<(ErrorCode, AuthPlayer)> GetPlayerAuthAsync(string accountid);
 
-    public Task<Tuple<ErrorCode, bool>> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
+    public Task<(ErrorCode, bool)> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
 
-    public Task<Tuple<ErrorCode, List<NoticeContent>>> GetNotificationAsync(string NotificationKey);
+    public Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey);
 
     public Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content);
 
