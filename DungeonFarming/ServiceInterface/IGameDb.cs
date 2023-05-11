@@ -9,7 +9,6 @@ namespace DungeonFarming.Services;
 
 public interface IGameDb : IDisposable
 {
-
     public Task<(ErrorCode, Int32)> InsertNewPlayer(string AccountId);
 
     public Task<ErrorCode> InsertPlayerItem(Int32 UID, PlayerItem item);
@@ -22,11 +21,9 @@ public interface IGameDb : IDisposable
 
     public Task<(ErrorCode, List<Mail>)> GetMailAsync(Int32 uid, Int32 page);
 
-    public List<PlayerItem> MakeItemListFromMail(Int32 uid, List<MailItem> ItemInMail);
+    public Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItemFromMail(Int32 uid, Int32 itemCode, Int32 itemCount);
 
-    public Task<(ErrorCode, List<PlayerItemForClient>)> InsertItemListToPlayer(Int32 uid, List<PlayerItem> itemList);
-
-    public Task<(ErrorCode, List<PlayerItemForClient>)> GetItemFromMailAsync(Int32 uid, Int32 mailcode);
+    public Task<(ErrorCode, PlayerItemForClient)> ReceiveItemFromMail(Int32 uid, Int32 mailcode);
 
     public Task<ErrorCode> SendAttendenceRewordsMail(Int32 uid);
 

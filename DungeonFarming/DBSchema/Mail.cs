@@ -11,13 +11,6 @@ public class Mail
     public DateTime ExpirationDate { get; set; }
     public bool IsReceive { get; set; }
     public DateTime CreatedAt { get; set; }
-}
-
-public class MailItem
-{
-    public Int32 No { get; set; }
-    public Int32 PlayerUID { get; set; }
-    public Int32 MailCode { get; set; }
     public Int32 ItemCode { get; set; }
     public Int32 ItemCount { get; set; }
 }

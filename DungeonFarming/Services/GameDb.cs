@@ -29,8 +29,10 @@ public class GameDb : IGameDb
 
     string[] playerItemCols = new[] { "UID", "ItemCode", "ItemName"
                 , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
-    string[] MailItemCols = new[] { "PlayerUID", "MailCode", "ItemCode", "ItemCount"};
+    string[] MailCols = new[] { "UID", "Title", "ExpirationDate","IsReceive", "CreatedAt", "ItemCode", "ItemCount"};
 
+
+    Int32 INF = -987654321;
     Int32 GoldAttributeCode = 5;
     Int32 WeaponAttributeCode = 1;
     Int32 ArmorAttributeCode = 2;
@@ -44,6 +46,11 @@ public class GameDb : IGameDb
     Int32 basicGold = 0;
 
     Int32 mailPageSize = 20;
+    string ProductsMailTitle = "구매 상품";
+    string AttendanceMailTitle = "출석 보상";
+
+    Int32 EnhanceItemPercentage = 30;
+    double EnhanceWeight = 1.1;
 
     public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig
         , IMasterData masterData)
@@ -58,44 +65,90 @@ public class GameDb : IGameDb
         _MasterData = masterData;
     }
 
+    private PlayerInfo MakeBasicPlayer(string accountID)
+    {
+        PlayerInfo basicPlayer = new PlayerInfo
+        {
+            AccountID = accountID,
+            Level = basicLevel,
+            Exp = basicExp,
+            Hp = basicHp,
+            Mp = basicMp,
+            Gold = basicGold,
+            LastLoginTime = DateTime.Now.Date,
+            ConsecutiveLoginDays = 0,
+            LastClearStage = 0
+        };
+
+        return basicPlayer;
+    }
+
+    private PlayerItem MakeBasicItem(Int32 uid)
+    {
+        PlayerItem basicItem = new PlayerItem
+        {
+            UID = uid,
+            ItemCode = _MasterData.ItemDict[basicWeaponCode].Code,
+            Attack = _MasterData.ItemDict[basicWeaponCode].Attack,
+            Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
+            Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
+            EnhanceCount = 0,
+            ItemCount = 1
+        };
+
+        return basicItem;
+    }
+
+    private PlayerItem MakeItem(Int32 uid, Int32 itemCode, Int32 itemCount)
+    {
+        Item masterItemData = _MasterData.ItemDict[itemCode];
+        PlayerItem basicItem = new PlayerItem
+        {
+            UID = uid,
+            ItemCode = itemCode,
+            Attack = masterItemData.Attack,
+            Defence = masterItemData.Defence,
+            Magic = masterItemData.Magic,
+            EnhanceCount = 0,
+            ItemCount = itemCount
+        };
+
+        return basicItem;
+    }
+
+    private PlayerItemForClient MakePlayerItemForClient(PlayerItem item)
+    {
+        PlayerItemForClient iteminfo = new PlayerItemForClient
+        {
+            ItemCode = item.ItemCode,
+            Attack = item.Attack,
+            Defence = item.Defence,
+            EnhanceCount = item.EnhanceCount,
+            Magic = item.Magic,
+            ItemCount = item.ItemCount,
+        };
+
+        return iteminfo;
+    }
+
     public async Task<(ErrorCode, Int32)> InsertNewPlayer(string AccountId)
     {
         try
         {
-            var Result = await _queryFactory.Query("Playerinfo").InsertAsync(new
-            {
-                AccountID = AccountId,
-                Level = basicLevel,
-                Exp = basicExp,
-                Hp = basicHp,
-                Mp = basicMp,
-                Gold = basicGold,
-                LastLoginTime = DateTime.Now.Date,
-                ConsecutiveLoginDays = 0,
-                LastClearStage = 0
-            });
+            var InsertPlayerRes = await _queryFactory.Query("Playerinfo").InsertAsync(MakeBasicPlayer(AccountId));
 
             var uid = await _queryFactory.Query("Playerinfo").Where("AccountID", AccountId)
                 .Select("UID").FirstOrDefaultAsync<int>();
 
-            PlayerItem basicItem = new PlayerItem
-            {
-                UID = uid,
-                ItemCode = _MasterData.ItemDict[basicWeaponCode].Code,
-                ItemName = _MasterData.ItemDict[basicWeaponCode].Name,
-                Attack = _MasterData.ItemDict[basicWeaponCode].Attack,
-                Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
-                Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
-                EnhanceCount = 0,
-                ItemCount = 1
-            };
+            PlayerItem basicItem = MakeBasicItem(uid);
 
-            Result = await _queryFactory.Query("PlayerItem").InsertAsync(basicItem);
+            var InsertBasicItemRes = await _queryFactory.Query("PlayerItem").InsertAsync(basicItem);
 
             return (ErrorCode.None, uid);
         }
         catch (Exception ex)
         {
+            var result = DeletePlayer(AccountId);
             _logger.ZLogError(ex,
                 $"[GameDb.InsertPlayer] ErrorCode : {ErrorCode.CreatePlayerFailException}");
             return (ErrorCode.CreatePlayerFailException, -1);
@@ -103,11 +156,53 @@ public class GameDb : IGameDb
 
     }
 
-    public async Task<ErrorCode> InsertPlayerItem(Int32 UID, PlayerItem item)
+    public async Task<ErrorCode> DeletePlayer(string accountID)
     {
         try
         {
-            var Result = await _queryFactory.Query("PlayerItem").InsertAsync(item);
+            var result = await _queryFactory.Query("PlayerInfo").Where("AccountID", accountID).DeleteAsync();
+            if (result == 0)
+            {
+                _logger.ZLogError(
+                $"[GameDb.Delete Player] ErrorMessage : Player Not Exist / AccountID: {accountID}");
+                return ErrorCode.DeletePlayerFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                $"[GameDb.Delete Player] ErrorCode : {ErrorCode.DeletePlayerFail}");
+            return ErrorCode.DeletePlayerFail;
+        }
+    }
+
+    public async Task<ErrorCode> DeletePlayer(Int32 uid)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("PlayerInfo").Where("UID", uid).DeleteAsync();
+            if (result == 0)
+            {
+                _logger.ZLogError(
+                $"[GameDb.Delete Player] ErrorMessage : Player Not Exist / UID: {uid}");
+                return ErrorCode.DeletePlayerFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                $"[GameDb.Delete Player] ErrorCode : {ErrorCode.DeletePlayerFail}");
+            return ErrorCode.DeletePlayerFail;
+        }
+    }
+
+    public async Task<ErrorCode> InsertPlayerItem(PlayerItem item)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("PlayerItem").InsertAsync(item);
 
             return ErrorCode.None;
         }
@@ -119,57 +214,91 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<(ErrorCode, List<PlayerItemForClient>)> InsertItemListToPlayer(Int32 uid, List<PlayerItem> itemList)
+    public async Task<ErrorCode> DeletePlayerItem(Int32 itemUniqueID)
     {
         try
         {
-            if (itemList.Count() == 0) { return (ErrorCode.InsertPlayerItemFail, null); }
+            var result = await _queryFactory.Query("PlayerItem")
+                .Where("ItemUniqueID", itemUniqueID).DeleteAsync();
 
-            List<PlayerItem> insertList = new List<PlayerItem>();
-            List<PlayerItemForClient> returnList = new List<PlayerItemForClient>();
-            foreach (var item in itemList)
+            if (result == 0)
             {
+                _logger.ZLogError(
+               $"[GameDb.Delete Item] ErrorMessage : Player Item Not Exist / ItemUID: {itemUniqueID}");
+                return ErrorCode.DeleteItemFail;
+            }
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+              $"[GameDb.Delete Item] ErrorCode : {ErrorCode.DeleteItemFail} / ItemUID: {itemUniqueID}");
+            return ErrorCode.DeleteItemFail;
+        }
+    }
 
-                if (_MasterData.ItemDict[item.ItemCode].CanOverlap == true)
+    public async Task<ErrorCode> DeleteMail(Int32 mailCode)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("Mail")
+                .Where("MailCode", mailCode).DeleteAsync();
+
+            if (result == 0)
+            {
+                _logger.ZLogError(
+               $"[GameDb.Delete Mail] ErrorMessage : Mail Not Exist / MailCode: {mailCode}");
+                return ErrorCode.DeleteMailFail;
+            }
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+              $"[GameDb.Delete Item] ErrorCode : {ErrorCode.DeleteMailFail} / MailCode: {mailCode}");
+            return ErrorCode.DeleteMailFail;
+        }
+    }
+
+    public async Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItemFromMail(Int32 uid, Int32 itemCode, Int32 itemCount)
+    {
+        try
+        {
+            Int32 PlayerGoldBeforeUpdate = INF;
+            Int32 ItemCountBeforeUpdate = INF;
+
+            Item masterItemData = _MasterData.ItemDict[itemCode];
+
+            PlayerItem insertData = MakeItem(uid, itemCode, itemCount);
+
+            if (_MasterData.ItemDict[itemCode].CanOverlap == true)
+            {
+                PlayerGoldBeforeUpdate = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                    .Select("Gold").FirstOrDefaultAsync<int>();
+
+                if (_MasterData.ItemDict[itemCode].Attribute == GoldAttributeCode)
                 {
-                    if (_MasterData.ItemDict[item.ItemCode].Attribute == GoldAttributeCode)
-                    {
-                        var updatePlayerGold = await _queryFactory.Query("PlayerInfo")
-                            .IncrementAsync("Gold", item.ItemCount);
-                    }
-
-                    bool isExist = await _queryFactory.Query("PlayerItem").Where("itemCode", item.ItemCode)
-                        .ExistsAsync();
-
-                    if (isExist == true)
-                    {
-                        var updateItemCount = await _queryFactory.Query("PlayerItem").Where("UID", uid).Where("ItemCode", item.ItemCode)
-                           .IncrementAsync("ItemCount", item.ItemCount);
-                        continue;
-                    }
+                    var updatePlayerGold = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                        .IncrementAsync("Gold", itemCount);
                 }
-                insertList.Add(item);
-                returnList.Add(new PlayerItemForClient
+
+                bool isExist = await _queryFactory.Query("PlayerItem").Where("itemCode", itemCode)
+                    .ExistsAsync();
+
+                if (isExist == true)
                 {
-                    ItemCode = item.ItemCode,
-                    Attack = item.Attack,
-                    Defence = item.Defence,
-                    EnhanceCount = item.EnhanceCount,
-                    Magic = item.Magic,
-                    ItemCount = item.ItemCount,
-                }) ;
+                    ItemCountBeforeUpdate = await _queryFactory.Query("PlayerItem").Where("ItemCode", itemCode)
+                    .Select("ItemCount").FirstOrDefaultAsync<int>();
+                    var updateItemCount = await _queryFactory.Query("PlayerItem").Where("UID", uid)
+                        .Where("ItemCode", itemCode)
+                       .IncrementAsync("ItemCount", itemCount);
+
+                    return (ErrorCode.None, MakePlayerItemForClient(insertData));
+                }
             }
 
-            var insertData = insertList.Select(item => new object[]
-                { item.UID, item.ItemCode, item.ItemName, item.Attack,
-                item.Defence, item.Magic, item.EnhanceCount, item.ItemCount}).ToArray();
-
-            var insertItemToPlayer = _queryFactory.Query("PlayerItem").AsInsert(playerItemCols, insertData);
-            await _queryFactory.ExecuteAsync(insertItemToPlayer);
-
-
-
-            return (ErrorCode.None, returnList);
+            var insertItemToPlayer = _queryFactory.Query("PlayerItem").InsertAsync(insertData);
+            return (ErrorCode.None, MakePlayerItemForClient(insertData));
         }
         catch(Exception ex) 
         {
@@ -178,6 +307,8 @@ public class GameDb : IGameDb
             return (ErrorCode.InsertPlayerItemFail, null);
         }
     }
+
+
 
     public async Task<(ErrorCode, PlayerInfo)> GetPlayerInfo(string AccountId)
     {
@@ -248,59 +379,24 @@ public class GameDb : IGameDb
         }
     }
 
-    public List<PlayerItem> MakeItemListFromMail(Int32 uid, List<MailItem> ItemInMail)
-    {
-        try
-        {
-            List<PlayerItem> ItemList = new List<PlayerItem>();
-            foreach (var it in ItemInMail)
-            {
-                Item itemMasterdata = _MasterData.getItemData(it.ItemCode);
-                ItemList.Add(new PlayerItem
-                {
-                    UID = uid,
-                    ItemCode = it.ItemCode,
-                    ItemName = itemMasterdata.Name,
-                    Attack = itemMasterdata.Attack,
-                    Defence = itemMasterdata.Defence,
-                    Magic = itemMasterdata.Magic,
-                    EnhanceCount = 0,
-                    ItemCount = it.ItemCount
-                });
-            }
-            return ItemList;
-        }
-        catch {
-            _logger.ZLogError(
-                   $"ErrorMessage: Update CanOverlap Item Count Error");
-            return null;
-        }
-
-    }
-
-    public async Task<(ErrorCode, List<PlayerItemForClient>)> GetItemFromMailAsync(Int32 uid, Int32 mailcode)
+    public async Task<(ErrorCode, PlayerItemForClient)> ReceiveItemFromMail(Int32 uid, Int32 mailcode)
     {
         try
         {
             var MailInfo = await _queryFactory.Query("Mail").Where("MailCode", mailcode).Where("IsReceive",false)
-                .SelectRaw("ExpirationDate").FirstOrDefaultAsync();
+                .FirstOrDefaultAsync<Mail>();
 
             if (MailInfo.ExpirationDate < DateTime.Now.Date)
             {
                 return (ErrorCode.MailExpirationDateOut, null);
             }
 
-            var mailItems = await _queryFactory.Query("MailItem")
-                .Where("PlayerUID", uid).Where("MailCode", mailcode)
-                .GetAsync<MailItem>();
+            (ErrorCode errorCode, PlayerItemForClient itemInfo) = await InsertPlayerItemFromMail(uid, MailInfo.ItemCode, MailInfo.ItemCount);
 
-            List<PlayerItem> ItemList = MakeItemListFromMail(uid, mailItems.ToList<MailItem>());
-            List<PlayerItemForClient> ItemListForClient = new List<PlayerItemForClient>();
-            (var errorCode, ItemListForClient) = await InsertItemListToPlayer(uid, ItemList);
-            var updateIsRead = _queryFactory.Query("Mail").Where("UID", uid).Where("MailCode", mailcode)
-                    .AsUpdate(new { IsReceive = true });
-            await _queryFactory.ExecuteAsync(updateIsRead);
-            return (ErrorCode.None, ItemListForClient);
+            var updateIsReceive = _queryFactory.Query("mail").Where("MailCode", mailcode)
+                .UpdateAsync(new {IsReceive = true});
+
+            return (errorCode, itemInfo);
         }
         catch(Exception ex)
         {
@@ -351,20 +447,10 @@ public class GameDb : IGameDb
             result = await _queryFactory.Query("Mail").InsertAsync(new Mail
             {
                 UID = uid,
-                Title = "출석 보상",
+                Title = AttendanceMailTitle,
                 ExpirationDate = DateTime.Now.AddDays(30).Date,
                 IsReceive = false,
                 CreatedAt = CreateMailTime,
-            });
-
-            var getMailCode = _queryFactory.Query("mail").Where("UID", uid)
-                .Where("CreatedAt", CreateMailTime).Select("LAST_INSERT_ID() as MailCode");
-            var mailCode = await getMailCode.GetAsync<int>();
-
-            result = await _queryFactory.Query("MailItem").InsertAsync(new MailItem
-            {
-                PlayerUID = uid,
-                MailCode = mailCode.FirstOrDefault(),
                 ItemCode = rewords.ItemCode,
                 ItemCount = rewords.Count
             });
@@ -401,20 +487,13 @@ public class GameDb : IGameDb
 
 
             DateTime CreateMailTime = DateTime.Now;
-            var mailCode = await _queryFactory.Query("Mail").InsertGetIdAsync<int>(new Mail
-            {
-                UID = uid,
-                Title = "구매 상품",
-                ExpirationDate = DateTime.Now.AddYears(1).Date,
-                IsReceive = false,
-                CreatedAt = CreateMailTime,
-            });
             var itemList = _MasterData.InAppProductDict[productCode].Item;
 
-
             var insertList = itemList.Select(item => new object[]
-                {uid, mailCode, item.ItemCode, item.ItemCount}).ToArray();
-            var insertQuery = _queryFactory.Query("MailItem").AsInsert(MailItemCols, insertList);
+                {uid,  $"{ProductsMailTitle}_{productCode}",DateTime.Now.AddYears(1).Date 
+                ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
+
+            var insertQuery = _queryFactory.Query("Mail").AsInsert(MailCols, insertList);
             await _queryFactory.ExecuteAsync(insertQuery);
 
             return ErrorCode.None;
@@ -433,20 +512,36 @@ public class GameDb : IGameDb
         try
         {
             var item = await _queryFactory.Query("playerItem").Where("UID", uid)
-                .Where("ItemUniqueID", itemUID).Where("IsBreak", false).FirstOrDefaultAsync<PlayerItem>();
+                .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
 
             var itemMasterData = _MasterData.ItemDict[item.ItemCode];
             var enhanceResult = false;
             if (item.EnhanceCount < itemMasterData.EnhanceMaxCount)
             {
-                item.EnhanceCount++;
+                Int32 newEnhanceCount = item.EnhanceCount + 1;
                 Random random = new Random();
-                if (random.Next(10) < 3)
+                if (random.Next(100) < EnhanceItemPercentage)
                 {
                     if (itemMasterData.Attribute == WeaponAttributeCode)
-                        item.Attack = (int)Math.Ceiling(item.Attack * 1.1);
-                    else if(itemMasterData.Attribute == ArmorAttributeCode)
-                        item.Defence = (int)Math.Ceiling(item.Defence * 1.1);
+                    {
+                        var newAttack = (int)Math.Ceiling(item.Attack * EnhanceWeight);
+                        var res = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
+                            .UpdateAsync(new
+                                { Attack =  newAttack, EnhanceCount = newEnhanceCount});
+
+                        item.Attack = newAttack;
+                        item.EnhanceCount = newEnhanceCount;
+                    }
+                    else if (itemMasterData.Attribute == ArmorAttributeCode)
+                    {
+                        var newDefence = (int)Math.Ceiling(item.Defence * EnhanceWeight);
+                        var res = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
+                            .UpdateAsync(new
+                            { Defence = newDefence, EnhanceCount = newEnhanceCount });
+
+                        item.Defence = newDefence;
+                        item.EnhanceCount = newEnhanceCount;
+                    }
 
                     _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
                    $"Enhance item success: attack: {item.Attack} / Defence: {item.Defence} / EnhanceCount: {item.EnhanceCount}");
@@ -455,13 +550,13 @@ public class GameDb : IGameDb
                 }
                 else
                 {
+                    var res = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
+                            .DeleteAsync();
                     _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
                    $"Enhance Fail");
 
                     enhanceResult = false;
                 }
-                var result = await _queryFactory.Query("playerItem").Where("ItemUniqueID", itemUID)
-                    .UpdateAsync(item);
                 return (ErrorCode.None, item, enhanceResult);
             }
             else

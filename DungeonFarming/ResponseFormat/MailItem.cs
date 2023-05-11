@@ -9,5 +9,5 @@ public class MailItemResponse
     [Required]
     public ErrorCode Result { get; set; } = ErrorCode.None;
 
-    public List<PlayerItemForClient> Items { get; set; } = null;
+    public PlayerItemForClient Item { get; set; } = null;
 }

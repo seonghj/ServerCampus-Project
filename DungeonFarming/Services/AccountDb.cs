@@ -100,13 +100,10 @@ public class AccountDb : IAccountDb
             _logger.ZLogDebug(
                 $"[DeleteAccount] AccountIDID: {AccountId}");
 
-            var count = await _queryFactory.Query("account").Where(
-                "AccountID",
-                "=",
-                AccountId
-            ).DeleteAsync();
+            var result = await _queryFactory.Query("account")
+                .Where("AccountID", AccountId).DeleteAsync();
 
-            if (count != 1)
+            if (result == 0)
             {
                 return ErrorCode.CreateAccountFailInsert;
             }

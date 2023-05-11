@@ -31,7 +31,7 @@ public class GetMailItem : ControllerBase
     {
         var response = new MailItemResponse();
 
-        (var errorCode, response.Items) = await _gameDb.GetItemFromMailAsync(request.UID, request.MailCode);
+        (var errorCode, response.Item) = await _gameDb.ReceiveItemFromMail(request.UID, request.MailCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
