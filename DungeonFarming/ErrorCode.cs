@@ -44,6 +44,7 @@ public enum ErrorCode : UInt16
     PlayerCountOver = 3010,
     ItemEnhanceError = 3012,
     ItemEnhanceDisable = 3013,
+    DeleteItemFail = 3014,
 
     PlayerStatusChangeFail = 3020,
     PlayerIsExistGame = 3021,
@@ -59,11 +60,13 @@ public enum ErrorCode : UInt16
     GetGameDbConnectionFail = 4002,
     SetMailFail = 4010,
     GetMailFail = 4011,
-    GetMailItemFail = 4012,
+    ReceiveMailItemFail = 4012,
     AlreadyGetMailItem = 4013,
     ProductAlreadyPaid = 4014,
     ReceiptInsertError = 4015,
     MailExpirationDateOut = 4016,
+    DeleteMailFail = 4017,
+    MailIsNotExist = 4018,
     //Redis 5000-
     RedisDbConnectionFail = 5002,
 

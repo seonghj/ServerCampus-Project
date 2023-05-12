@@ -13,6 +13,8 @@ using MySqlConnector;
 using SqlKata.Execution;
 using ZLogger;
 using SqlKata;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
+using System.Diagnostics;
 
 
 namespace DungeonFarming.Services;
@@ -48,6 +50,9 @@ public class GameDb : IGameDb
     Int32 mailPageSize = 20;
     string ProductsMailTitle = "구매 상품";
     string AttendanceMailTitle = "출석 보상";
+
+    DateTime attendanceRewordsExpireDate = DateTime.Now.AddDays(30).Date;
+    DateTime productsMailExpireDate = DateTime.Now.AddYears(1).Date;
 
     Int32 EnhanceItemPercentage = 30;
     double EnhanceWeight = 1.1;
@@ -129,6 +134,37 @@ public class GameDb : IGameDb
         };
 
         return iteminfo;
+    }
+
+    private Mail MakeMail(Int32 uid, string title, DateTime expirationDate, Int32 itemCode, Int32 itemCount)
+    {
+        DateTime CreateMailTime = DateTime.Now;
+
+        Mail newMail = new Mail
+        {
+            UID = uid,
+            Title = title,
+            ExpirationDate = expirationDate,
+            IsReceive = false,
+            CreatedAt = CreateMailTime,
+            ItemCode = itemCode,
+            ItemCount = itemCount
+        };
+
+        return newMail;
+    }
+
+    private async void DeleteInAppProductsMail(Int32 uid, Int32 productCode, DateTime createTime, DateTime expirationTime)
+    {
+        var itemList = _MasterData.InAppProductDict[productCode].Item;
+
+        foreach (var item in itemList)
+        {
+            var deleteResult = await _queryFactory.Query("Mail")
+                .Where("UID", uid).Where("ExpirationDate", expirationTime).Where("CreatedAt", createTime)
+                .Where("ItemCode", item.ItemCode).Where("ItemCount", item.ItemCount)
+                .DeleteAsync();
+        }
     }
 
     public async Task<(ErrorCode, Int32)> InsertNewPlayer(string AccountId)
@@ -262,10 +298,11 @@ public class GameDb : IGameDb
 
     public async Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItemFromMail(Int32 uid, Int32 itemCode, Int32 itemCount)
     {
+        Int32 PlayerGoldBeforeUpdate = INF;
+        Int32 ItemCountBeforeUpdate = INF;
+        bool isExist = false;
         try
         {
-            Int32 PlayerGoldBeforeUpdate = INF;
-            Int32 ItemCountBeforeUpdate = INF;
 
             Item masterItemData = _MasterData.ItemDict[itemCode];
 
@@ -273,22 +310,22 @@ public class GameDb : IGameDb
 
             if (_MasterData.ItemDict[itemCode].CanOverlap == true)
             {
-                PlayerGoldBeforeUpdate = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
-                    .Select("Gold").FirstOrDefaultAsync<int>();
 
                 if (_MasterData.ItemDict[itemCode].Attribute == GoldAttributeCode)
                 {
+                    PlayerGoldBeforeUpdate = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                    .Select("Gold").FirstAsync<int>();
                     var updatePlayerGold = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                         .IncrementAsync("Gold", itemCount);
                 }
 
-                bool isExist = await _queryFactory.Query("PlayerItem").Where("itemCode", itemCode)
+                isExist = await _queryFactory.Query("PlayerItem").Where("itemCode", itemCode)
                     .ExistsAsync();
 
                 if (isExist == true)
                 {
                     ItemCountBeforeUpdate = await _queryFactory.Query("PlayerItem").Where("ItemCode", itemCode)
-                    .Select("ItemCount").FirstOrDefaultAsync<int>();
+                    .Select("ItemCount").FirstAsync<int>();
                     var updateItemCount = await _queryFactory.Query("PlayerItem").Where("UID", uid)
                         .Where("ItemCode", itemCode)
                        .IncrementAsync("ItemCount", itemCount);
@@ -302,6 +339,18 @@ public class GameDb : IGameDb
         }
         catch(Exception ex) 
         {
+            if(PlayerGoldBeforeUpdate != INF)
+            {
+               await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                        .UpdateAsync(new { Gold = PlayerGoldBeforeUpdate });
+            }
+
+            if (ItemCountBeforeUpdate != INF)
+            {
+                await _queryFactory.Query("PlayerItem").Where("UID", uid).Where("ItemCode", itemCode)
+                       .UpdateAsync(new {ItemCount = ItemCountBeforeUpdate });
+            }
+
             _logger.ZLogError(ex,
                    $"ErrorMessage: Insert Item List to Player Error");
             return (ErrorCode.InsertPlayerItemFail, null);
@@ -332,13 +381,18 @@ public class GameDb : IGameDb
         {
             var PlayerInfomation = await _queryFactory.Query("playerinfo").Where("UID", uid).FirstOrDefaultAsync<PlayerInfo>();
 
+            if (PlayerInfomation == null)
+            {
+                return (ErrorCode.GetPlayerInfoFail, null);
+            }
+
             return (ErrorCode.None, PlayerInfomation);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex,
                 $"[GameDB.GetPlayer] ErrorCode : {ErrorCode.GetPlayerInfoFail}");
-            return (ErrorCode.None, null);
+            return (ErrorCode.GetPlayerInfoFail, null);
         }
     }
 
@@ -385,6 +439,10 @@ public class GameDb : IGameDb
         {
             var MailInfo = await _queryFactory.Query("Mail").Where("MailCode", mailcode).Where("IsReceive",false)
                 .FirstOrDefaultAsync<Mail>();
+            if (MailInfo == null)
+            {
+                return (ErrorCode.MailIsNotExist, null);
+            }
 
             if (MailInfo.ExpirationDate < DateTime.Now.Date)
             {
@@ -392,6 +450,13 @@ public class GameDb : IGameDb
             }
 
             (ErrorCode errorCode, PlayerItemForClient itemInfo) = await InsertPlayerItemFromMail(uid, MailInfo.ItemCode, MailInfo.ItemCount);
+
+            if (errorCode != ErrorCode.None)
+            {
+                _logger.ZLogError(
+                   $"ErrorMessage: Get Item In Mail Error");
+                return (errorCode, null);
+            }
 
             var updateIsReceive = _queryFactory.Query("mail").Where("MailCode", mailcode)
                 .UpdateAsync(new {IsReceive = true});
@@ -402,7 +467,7 @@ public class GameDb : IGameDb
         {
             _logger.ZLogError(ex,
                    $"ErrorMessage: Get Item In Mail Error");
-            return (ErrorCode.GetMailItemFail, null);
+            return (ErrorCode.ReceiveMailItemFail, null);
         }
     }
 
@@ -410,9 +475,10 @@ public class GameDb : IGameDb
     // 출석부
     public async Task<ErrorCode> SendAttendenceRewordsMail(Int32 uid)
     {
+        PlayerInfo playerInfo = null;
         try
         {
-            (ErrorCode errorCode, PlayerInfo playerInfo) = await GetPlayerInfo(uid);
+            (ErrorCode errorCode, playerInfo) = await GetPlayerInfo(uid);
             if(errorCode != ErrorCode.None)
             {
                 _logger.ZLogError(
@@ -430,35 +496,54 @@ public class GameDb : IGameDb
             else NextAttendenceDay = playerInfo.ConsecutiveLoginDays + 1;
 
 
-
-            var result = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+            var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                     .UpdateAsync(new
                     {
                         ConsecutiveLoginDays = NextAttendenceDay,
                         LastLoginTime = DateTime.Now.Date
                     });
-            playerInfo.LastLoginTime = DateTime.Now.Date;
-            playerInfo.ConsecutiveLoginDays = NextAttendenceDay;
 
-            Attendance rewords = _MasterData.AttendanceDict[playerInfo.ConsecutiveLoginDays];
+            if (updateResult == 0)
+            {
+                if (errorCode != ErrorCode.None)
+                {
+                    _logger.ZLogError(
+                       $"ErrorMessage: Update Attendence Day Error / ErrorMessage : PlayerInfo Update Fail");
+                    return ErrorCode.SendAttendenceRewordsFail;
+                }
+            }
+
+            Attendance rewords = _MasterData.AttendanceDict[NextAttendenceDay];
 
             DateTime CreateMailTime = DateTime.Now;
+            DateTime ExpirationDate = DateTime.Now.AddDays(30).Date;
 
-            result = await _queryFactory.Query("Mail").InsertAsync(new Mail
+
+            var insertResult = await _queryFactory.Query("Mail")
+                .InsertAsync(MakeMail(uid, AttendanceMailTitle, attendanceRewordsExpireDate, rewords.ItemCode, rewords.Count));
+            if (insertResult == 0)
             {
-                UID = uid,
-                Title = AttendanceMailTitle,
-                ExpirationDate = DateTime.Now.AddDays(30).Date,
-                IsReceive = false,
-                CreatedAt = CreateMailTime,
-                ItemCode = rewords.ItemCode,
-                ItemCount = rewords.Count
-            });
+                updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                    .UpdateAsync(new
+                    {
+                        ConsecutiveLoginDays = playerInfo.ConsecutiveLoginDays,
+                        LastLoginTime = playerInfo.LastLoginTime
+                    });
+            }
 
             return ErrorCode.None;
         }
         catch
         {
+            if (playerInfo != null)
+            {
+                var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                    .UpdateAsync(new
+                    {
+                        ConsecutiveLoginDays = playerInfo.ConsecutiveLoginDays,
+                        LastLoginTime = playerInfo.LastLoginTime
+                    });
+            }
             _logger.ZLogError(
                    $"ErrorMessage: Send Attendence Rewords Error");
             return ErrorCode.SendAttendenceRewordsFail;
@@ -467,8 +552,15 @@ public class GameDb : IGameDb
 
 
     // 인앱 구매
+
     public async Task<ErrorCode> InAppProductSentToMail(Int32 uid, Int32 productCode, string receiptCode)
     {
+        DateTime CreateMailTime = DateTime.Now;
+        DateTime expirationTime = productsMailExpireDate;
+        var itemList = _MasterData.InAppProductDict[productCode].Item;
+        var insertList = itemList.Select(item => new object[]
+                {uid,  $"{ProductsMailTitle}_{productCode}",expirationTime
+                ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
         try
         {
             var isExist = await _queryFactory.Query("Receipt").Where("ReceiptCode", receiptCode)
@@ -478,28 +570,37 @@ public class GameDb : IGameDb
                 return ErrorCode.ProductAlreadyPaid;
             }
 
-            var result = await _queryFactory.Query("Receipt").InsertAsync(new
+            var insertQuery = _queryFactory.Query("Mail").AsInsert(MailCols, insertList);
+            var insertResult = await _queryFactory.ExecuteAsync(insertQuery);
+
+            if (insertResult != insertList.Length)
+            {
+                DeleteInAppProductsMail(uid, productCode, CreateMailTime, expirationTime);
+                _logger.ZLogError(
+                   $"ErrorMessage: Send Product Mail Error");
+                return ErrorCode.None;
+            }
+
+            var insertReceiptResult = await _queryFactory.Query("Receipt").InsertAsync(new
             {
                 ReceiptCode = receiptCode,
                 UID = uid,
                 ProductCode = productCode
             });
 
-
-            DateTime CreateMailTime = DateTime.Now;
-            var itemList = _MasterData.InAppProductDict[productCode].Item;
-
-            var insertList = itemList.Select(item => new object[]
-                {uid,  $"{ProductsMailTitle}_{productCode}",DateTime.Now.AddYears(1).Date 
-                ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
-
-            var insertQuery = _queryFactory.Query("Mail").AsInsert(MailCols, insertList);
-            await _queryFactory.ExecuteAsync(insertQuery);
+            if (insertReceiptResult == 0)
+            {
+                DeleteInAppProductsMail(uid, productCode, CreateMailTime, expirationTime);
+                _logger.ZLogError(
+                   $"ErrorMessage: Send Product Mail Error");
+                return ErrorCode.None;
+            }
 
             return ErrorCode.None;
         }
         catch(Exception ex)
         {
+            DeleteInAppProductsMail(uid, productCode, CreateMailTime, expirationTime);
             _logger.ZLogError(ex,
                    $"ErrorMessage: Send Product Mail Error");
             return ErrorCode.None;
@@ -511,40 +612,40 @@ public class GameDb : IGameDb
     {
         try
         {
-            var item = await _queryFactory.Query("playerItem").Where("UID", uid)
+            var itemInfo = await _queryFactory.Query("playerItem").Where("UID", uid)
                 .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
 
-            var itemMasterData = _MasterData.ItemDict[item.ItemCode];
+            var itemMasterData = _MasterData.ItemDict[itemInfo.ItemCode];
             var enhanceResult = false;
-            if (item.EnhanceCount < itemMasterData.EnhanceMaxCount)
+            if (itemInfo.EnhanceCount < itemMasterData.EnhanceMaxCount)
             {
-                Int32 newEnhanceCount = item.EnhanceCount + 1;
+                Int32 newEnhanceCount = itemInfo.EnhanceCount + 1;
                 Random random = new Random();
                 if (random.Next(100) < EnhanceItemPercentage)
                 {
                     if (itemMasterData.Attribute == WeaponAttributeCode)
                     {
-                        var newAttack = (int)Math.Ceiling(item.Attack * EnhanceWeight);
-                        var res = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
+                        var newAttack = (int)Math.Ceiling(itemInfo.Attack * EnhanceWeight);
+                        var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
                             .UpdateAsync(new
                                 { Attack =  newAttack, EnhanceCount = newEnhanceCount});
 
-                        item.Attack = newAttack;
-                        item.EnhanceCount = newEnhanceCount;
+                        itemInfo.Attack = newAttack;
+                        itemInfo.EnhanceCount = newEnhanceCount;
                     }
                     else if (itemMasterData.Attribute == ArmorAttributeCode)
                     {
-                        var newDefence = (int)Math.Ceiling(item.Defence * EnhanceWeight);
-                        var res = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
+                        var newDefence = (int)Math.Ceiling(itemInfo.Defence * EnhanceWeight);
+                        var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
                             .UpdateAsync(new
                             { Defence = newDefence, EnhanceCount = newEnhanceCount });
 
-                        item.Defence = newDefence;
-                        item.EnhanceCount = newEnhanceCount;
+                        itemInfo.Defence = newDefence;
+                        itemInfo.EnhanceCount = newEnhanceCount;
                     }
 
                     _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
-                   $"Enhance item success: attack: {item.Attack} / Defence: {item.Defence} / EnhanceCount: {item.EnhanceCount}");
+                   $"Enhance item success: attack: {itemInfo.Attack} / Defence: {itemInfo.Defence} / EnhanceCount: {itemInfo.EnhanceCount}");
 
                     enhanceResult = true;
                 }
@@ -557,7 +658,7 @@ public class GameDb : IGameDb
 
                     enhanceResult = false;
                 }
-                return (ErrorCode.None, item, enhanceResult);
+                return (ErrorCode.None, itemInfo, enhanceResult);
             }
             else
             {

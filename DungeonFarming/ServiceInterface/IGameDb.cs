@@ -11,7 +11,13 @@ public interface IGameDb : IDisposable
 {
     public Task<(ErrorCode, Int32)> InsertNewPlayer(string AccountId);
 
-    public Task<ErrorCode> InsertPlayerItem(Int32 UID, PlayerItem item);
+    public Task<ErrorCode> InsertPlayerItem(PlayerItem item);
+
+    public Task<ErrorCode> DeletePlayer(Int32 uid);
+
+    public Task<ErrorCode> DeletePlayerItem(Int32 itemUniqueID);
+
+    public Task<ErrorCode> DeleteMail(Int32 mailCode);
 
     public Task<(ErrorCode, PlayerInfo)> GetPlayerInfo(string AccountId);
 

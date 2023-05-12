@@ -15,12 +15,12 @@ namespace DungeonFarming.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class GetMailItem : ControllerBase
+public class ReceiveItemInMail : ControllerBase
 {
     readonly IGameDb _gameDb;
     readonly ILogger<Login> _logger;
 
-    public GetMailItem(ILogger<Login> logger, IGameDb gameDb)
+    public ReceiveItemInMail(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
