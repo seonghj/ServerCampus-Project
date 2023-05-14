@@ -22,4 +22,12 @@ public interface IRedisDb
     public Task<bool> SetRequestLockAsync(string key);
 
     public Task<bool> DeleteRequestLockAsync(string key);
+
+    public Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode);
+
+    public Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode);
+
+    public Task<List<int>> GetFarmingItemList(Int32 uid);
+
+    public Task<List<int>> GetKilledNPCList(Int32 uid);
 }

@@ -158,14 +158,28 @@ public class MasterData:IMasterData
 
             StageItemDict = new Dictionary<Int32, StageItem>();
 
-            foreach (var it in result.ToList())
+            foreach (var stageitems in result.ToList())
             {
-                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(it.ItemCode);
+                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(stageitems.ItemCode);
 
-                StageItemDict.Add(it.Code, new StageItem
+                Dictionary<Int32, Int32> itemCount = new Dictionary<Int32, Int32>();
+                foreach (var it in list)
                 {
-                    Code = it.Code,
-                    ItemCode = list
+                    if (itemCount.ContainsKey(it) == true)
+                    {
+                        itemCount[it] += 1;
+                    }
+                    else
+                    {
+                        itemCount.Add(it, 1);
+                    }
+                }
+
+                StageItemDict.Add(stageitems.Code, new StageItem
+                {
+                    Code = stageitems.Code,
+                    ItemCode = list,
+                    ItemCount = itemCount
                 });
             }
 
@@ -191,14 +205,28 @@ public class MasterData:IMasterData
 
             StageNPCDict = new Dictionary<Int32, StageNPC>();
 
-            foreach (var it in result.ToList())
+            foreach (var stageNPCs in result.ToList())
             {
-                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(it.NPCinfo);
+                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(stageNPCs.NPCinfo);
 
-                StageNPCDict.Add(it.Code, new StageNPC
+                List<Int32> npcList = new List<Int32>();
+                Dictionary<Int32, Int32> npcCount = new Dictionary<Int32, Int32>();
+                Dictionary<Int32, Int32> npcExp = new Dictionary<Int32, Int32>();
+
+                foreach (var npc in list)
                 {
-                    Code = it.Code,
-                    NPCInfoList = list
+                    npcList.Add(npc.NPCCode);
+                    npcCount.Add(npc.NPCCode, npc.Count);
+                    npcExp.Add(npc.NPCCode, npc.Exp);
+                }
+
+                StageNPCDict.Add(stageNPCs.Code, new StageNPC
+                {
+                    Code = stageNPCs.Code,
+                    NPCInfoList = list,
+                    NPCList = npcList,
+                    NPCCount = npcCount,
+                    NPCExp = npcExp
                 });
             }
 
@@ -268,14 +296,28 @@ public class MasterData:IMasterData
 
             StageItemDict = new Dictionary<Int32, StageItem>();
 
-            foreach (var it in result5.ToList())
+            foreach (var stageitems in result5.ToList())
             {
-                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(it.ItemCode);
+                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(stageitems.ItemCode);
 
-                StageItemDict.Add(it.Code, new StageItem
+                Dictionary<Int32, Int32> itemCount = new Dictionary<Int32, Int32>();
+                foreach (var it in list)
                 {
-                    Code = it.Code,
-                    ItemCode = list
+                    if (itemCount.ContainsKey(it) == true)
+                    {
+                        itemCount[it] += 1;
+                    }
+                    else
+                    {
+                        itemCount.Add(it, 1);
+                    }
+                }
+
+                StageItemDict.Add(stageitems.Code, new StageItem
+                {
+                    Code = stageitems.Code,
+                    ItemCode = list,
+                    ItemCount = itemCount
                 });
             }
 
@@ -286,14 +328,28 @@ public class MasterData:IMasterData
 
             StageNPCDict = new Dictionary<Int32, StageNPC>();
 
-            foreach (var it in result6.ToList())
+            foreach (var stageNPCs in result6.ToList())
             {
-                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(it.NPCinfo);
+                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(stageNPCs.NPCinfo);
 
-                StageNPCDict.Add(it.Code, new StageNPC
+                List<Int32> npcList = new List<Int32>();
+                Dictionary<Int32, Int32> npcCount = new Dictionary<Int32, Int32>();
+                Dictionary<Int32, Int32> npcExp = new Dictionary<Int32, Int32>();
+
+                foreach (var npc in list)
                 {
-                    Code = it.Code,
-                    NPCInfoList = list
+                    npcList.Add(npc.NPCCode);
+                    npcCount.Add(npc.NPCCode, npc.Count);
+                    npcExp.Add(npc.NPCCode, npc.Exp);
+                }
+
+                StageNPCDict.Add(stageNPCs.Code, new StageNPC
+                {
+                    Code = stageNPCs.Code,
+                    NPCInfoList = list,
+                    NPCList = npcList,
+                    NPCCount = npcCount,
+                    NPCExp = npcExp
                 });
             }
 

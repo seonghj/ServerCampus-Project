@@ -37,6 +37,10 @@ public class StageStart : ControllerBase
             return response;
         }
 
+        response.ItemCodeList = _gameDb.GetStageItemInfo(request.UID, request.StageCode);
+
+        response.NPCList = _gameDb.GetStageNPCInfo(request.UID, request.StageCode);
+
         _logger.ZLogInformationWithPayload(new { UID = request.UID , Result = response.CanStart}, "Check Start Stage Success");
         return response;
     }

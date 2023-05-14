@@ -72,5 +72,8 @@ public enum ErrorCode : UInt16
 
     // InStage 6000~
     CheckStartStageError = 6001,
-    DisableStartStage = 6002
+    DisableStartStage = 6002,
+    SendStageInfoFail = 6003,
+    FarmingItemFail = 6004,
+    NotExistItemInStage = 6005
 }

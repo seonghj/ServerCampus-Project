@@ -8,7 +8,14 @@ public class StageNPCGetter
 public class StageNPC
 {
     public Int32 Code { get; set; }
+
     public List<NPCInfo> NPCInfoList { set; get; }
+
+    public List<Int32> NPCList { set; get; }
+
+    public Dictionary<Int32, Int32> NPCCount { set; get; }
+
+    public Dictionary<Int32, Int32> NPCExp { set; get; }
 }
 
 public class NPCInfo

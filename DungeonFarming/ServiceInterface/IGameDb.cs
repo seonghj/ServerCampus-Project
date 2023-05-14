@@ -38,4 +38,16 @@ public interface IGameDb : IDisposable
     public Task<(ErrorCode, PlayerItem, bool)> EnhanceItem(Int32 uid, Int32 itemUID);
 
     public Task<(ErrorCode, bool)> CheckAbleStartStage(Int32 uid, Int32 stageCode);
+
+    public List<Int32> GetStageItemInfo(Int32 uid, Int32 stageCode);
+
+    public List<NPCInfo> GetStageNPCInfo(Int32 uid, Int32 stageCode);
+
+    public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode);
+
+    public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode);
+
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<Int32> farmingItemList);
+
+    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, List<Int32> currKilledNpc);
 }

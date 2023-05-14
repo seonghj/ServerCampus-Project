@@ -9,11 +9,16 @@ using ZLogger;
 using static LogManager;
 using Microsoft.Extensions.Options;
 using DungeonFarming.ResponseFormat;
+using System.Reflection.Emit;
+using DungeonFarming.MasterData;
 
 namespace DungeonFarming.Services;
 
 public class RedisDb : IRedisDb
 {
+    private const string FarmingItemKey = "FarmingItem_";
+    private const string KilledNPCKey = "KilledNPC_";
+
     public RedisConnection _redisConn;
     private static readonly ILogger<RedisDb> s_logger = GetLogger<RedisDb>();
 
@@ -202,6 +207,76 @@ public class RedisDb : IRedisDb
             return false;
         }
     }
+
+    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode)
+    {
+        try
+        { 
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{uid}", null);
+            var redisResult = await redis.LeftPushAsync(ItemCode, null);
+            return ErrorCode.None;
+
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                  $"ErrorMessage: Farming Item Error");
+            return ErrorCode.FarmingItemFail;
+        }
+    }
+
+    public async Task<List<int>> GetFarmingItemList(Int32 uid)
+    {
+        try
+        {
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{uid}", null);
+            var redisResult = await redis.RangeAsync();
+            return redisResult.ToList();
+
+        }
+        catch(Exception ex) 
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Farming Item Error");
+            return null;
+        }
+    }
+
+    public async Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode)
+    {
+        try
+        {
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{uid}", null);
+            var redisResult = await redis.LeftPushAsync(NPCCode, null);
+
+            return ErrorCode.None;
+
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                  $"ErrorMessage: Player Kill NPC Error");
+            return ErrorCode.FarmingItemFail;
+        }
+    }
+
+    public async Task<List<int>> GetKilledNPCList(Int32 uid)
+    {
+        try
+        {
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{uid}", null);
+            var redisResult = await redis.RangeAsync();
+            return redisResult.ToList();
+
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                  $"ErrorMessage: Farming Item Error");
+            return null;
+        }
+    }
+
 
     public TimeSpan NxKeyTimeSpan()
     {

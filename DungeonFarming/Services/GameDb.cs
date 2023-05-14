@@ -15,7 +15,7 @@ using ZLogger;
 using SqlKata;
 using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 using System.Diagnostics;
-
+using System.Reflection.Metadata.Ecma335;
 
 namespace DungeonFarming.Services;
 
@@ -702,6 +702,97 @@ public class GameDb : IGameDb
             return (ErrorCode.CheckStartStageError, false);
         }
     }
+
+    public List<Int32> GetStageItemInfo(Int32 uid, Int32 stageCode)
+    {
+        List<Int32> itemCodeList = new List<Int32>();
+        foreach (var Item in _MasterData.StageItemDict[stageCode].ItemCode)
+        {
+            itemCodeList.Add(Item);
+        }
+
+        return itemCodeList;
+    }
+
+    public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode)
+    {
+        return _MasterData.StageItemDict[stageCode].ItemCode.Contains(itemCode);
+    }
+
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<Int32> CurrFarmingItems)
+    {
+        if (CheckItemExistInStage(itemCode, stageCode) == false)
+        {
+            return ErrorCode.NotExistItemInStage;
+        }
+
+        if (CurrFarmingItems.Count == 0)
+        {
+            return ErrorCode.None;
+        }
+
+        Dictionary<int, int> leftItemCount = new Dictionary<int, int>(_MasterData.StageItemDict[stageCode].ItemCount);
+
+        foreach(var item in CurrFarmingItems)
+        {
+            leftItemCount[item] -= 1;
+        }
+
+        if (leftItemCount[itemCode] > 0)
+        {
+            return ErrorCode.None;
+        }
+        return ErrorCode.NotExistItemInStage;
+    }
+
+    public List<NPCInfo> GetStageNPCInfo(Int32 uid, Int32 stageCode)
+    {
+        return _MasterData.StageNPCDict[stageCode].NPCInfoList;
+    }
+
+    public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode)
+    {
+        bool isExist = false;
+
+        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCInfoList)
+        {
+            if (npc.NPCCode == NPCCode) { isExist = true; break; }
+        }
+
+        return isExist;
+    }
+
+    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, List<Int32> currKilledNpc)
+    {
+        if (CheckNPCExistInStage(npcCode, stageCode) == false)
+        {
+            return ErrorCode.NotExistItemInStage;
+        }
+
+        if (currKilledNpc.Count == 0)
+        {
+            return ErrorCode.None;
+        }
+
+        Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.StageNPCDict[stageCode].NPCCount);
+
+        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCList)
+        {
+            int cnt = currKilledNpc.Count(x => x == npc);
+            leftNPCCount[npc] -= cnt;
+        }
+
+        if (leftNPCCount[npcCode] > 0)
+        {
+            return ErrorCode.None;
+        }
+        return ErrorCode.NotExistItemInStage;
+    }
+
+
+
+
+
 
     private void GameDBOpen()
     {
