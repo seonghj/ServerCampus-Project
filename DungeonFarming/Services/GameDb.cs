@@ -296,7 +296,7 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItemFromMail(Int32 uid, Int32 itemCode, Int32 itemCount)
+    public async Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItem(Int32 uid, Int32 itemCode, Int32 itemCount)
     {
         Int32 PlayerGoldBeforeUpdate = INF;
         Int32 ItemCountBeforeUpdate = INF;
@@ -449,7 +449,7 @@ public class GameDb : IGameDb
                 return (ErrorCode.MailExpirationDateOut, null);
             }
 
-            (ErrorCode errorCode, PlayerItemForClient itemInfo) = await InsertPlayerItemFromMail(uid, MailInfo.ItemCode, MailInfo.ItemCount);
+            (ErrorCode errorCode, PlayerItemForClient itemInfo) = await InsertPlayerItem(uid, MailInfo.ItemCode, MailInfo.ItemCount);
 
             if (errorCode != ErrorCode.None)
             {
@@ -703,15 +703,9 @@ public class GameDb : IGameDb
         }
     }
 
-    public List<Int32> GetStageItemInfo(Int32 uid, Int32 stageCode)
+    public List<ItemCodeAndCount> GetStageItemInfo(Int32 uid, Int32 stageCode)
     {
-        List<Int32> itemCodeList = new List<Int32>();
-        foreach (var Item in _MasterData.StageItemDict[stageCode].ItemCode)
-        {
-            itemCodeList.Add(Item);
-        }
-
-        return itemCodeList;
+        return _MasterData.StageItemDict[stageCode].ItemInfoList;
     }
 
     public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode)
@@ -789,9 +783,37 @@ public class GameDb : IGameDb
         return ErrorCode.NotExistItemInStage;
     }
 
+    public ErrorCode CheckClearStage(Int32 stageCode, List<Int32> currKilledNpc)
+    {
+        if (currKilledNpc.Count == 0)
+        {
+            return ErrorCode.PlayerClearStageDisable;
+        }
 
+        Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.StageNPCDict[stageCode].NPCCount);
 
+        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCList)
+        {
+            int cnt = currKilledNpc.Count(x => x == npc);
+            leftNPCCount[npc] -= cnt;
 
+            if (leftNPCCount[npc] > 0)
+            {
+                return ErrorCode.PlayerClearStageDisable;
+            }
+        }
+        return ErrorCode.None;
+    }
+
+    public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<Int32> earnItemList)
+    {
+        List<PlayerItemForClient> itemList = new List<PlayerItemForClient>();
+
+        foreach (var itemCode in earnItemList)
+        {
+            PlayerItem item = MakeItem(uid, itemCode, 1);
+        }
+    }
 
 
     private void GameDBOpen()

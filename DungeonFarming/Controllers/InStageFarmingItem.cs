@@ -32,8 +32,7 @@ public class FarmingItem : ControllerBase
     {
         var response = new FarmingItemResponse();
 
-        List<int> currFarmingItems = new List<int>();
-        currFarmingItems = await _redisDb.GetFarmingItemList(request.UID);
+        List<int> currFarmingItems = new List<int>(await _redisDb.GetFarmingItemList(request.UID, request.StageCode));
 
         response.Result = _gameDb.CheckCanFarmingItem(request.ItemCode, request.StageCode, currFarmingItems);
 
@@ -43,7 +42,7 @@ public class FarmingItem : ControllerBase
             return response;
         }
 
-        var errorCode = await _redisDb.PlayerFarmingItem(request.UID, request.ItemCode);
+        var errorCode = await _redisDb.PlayerFarmingItem(request.UID, request.ItemCode, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

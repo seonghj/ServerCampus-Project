@@ -4,17 +4,17 @@ using Microsoft.Extensions.Options;
 namespace DungeonFarming.MasterData;
 public interface IMasterData
 {
-    public Dictionary<Int32, Item> ItemDict { get; set; }
+    public Dictionary<Int32, Item> ItemDict { get;}
 
-    public Dictionary<Int32, ItemAttribute> ItemAttributeDict { get; set; }
+    public Dictionary<Int32, ItemAttribute> ItemAttributeDict { get;}
 
-    public Dictionary<Int32, InAppProduct> InAppProductDict { get; set; }
+    public Dictionary<Int32, InAppProduct> InAppProductDict { get;}
 
-    public Dictionary<Int32, Attendance> AttendanceDict { get; set; }
+    public Dictionary<Int32, Attendance> AttendanceDict { get; }
 
-    public Dictionary<Int32, StageItem> StageItemDict { get; set; }
+    public Dictionary<Int32, StageItem> StageItemDict { get; }
 
-    public Dictionary<Int32, StageNPC> StageNPCDict { get; set; }
+    public Dictionary<Int32, StageNPC> StageNPCDict { get; }
 
     Task<ErrorCode> getMasterData_Item();
 

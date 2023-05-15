@@ -208,11 +208,11 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode)
+    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 stageCode)
     {
         try
         { 
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
             var redisResult = await redis.LeftPushAsync(ItemCode, null);
             return ErrorCode.None;
 
@@ -225,11 +225,11 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<int>> GetFarmingItemList(Int32 uid)
+    public async Task<List<int>> GetFarmingItemList(Int32 uid, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
             var redisResult = await redis.RangeAsync();
             return redisResult.ToList();
 
@@ -242,11 +242,35 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode)
+    public async Task<ErrorCode> DeleteFarmingItemList(Int32 uid, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
+            var redisResult = await redis.DeleteAsync();
+
+            if (redisResult == false)
+            {
+                s_logger.ZLogError(
+                 $"ErrorMessage: Delete Farming Item List Error");
+                return ErrorCode.DeleteFarmingItemListFail;
+            }
+            return ErrorCode.None;
+
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Farming Item Error");
+            return ErrorCode.DeleteFarmingItemListFail;
+        }
+    }
+
+    public async Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode, Int32 stageCode)
+    {
+        try
+        {
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
             var redisResult = await redis.LeftPushAsync(NPCCode, null);
 
             return ErrorCode.None;
@@ -260,11 +284,11 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<int>> GetKilledNPCList(Int32 uid)
+    public async Task<List<int>> GetKilledNPCList(Int32 uid, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
             var redisResult = await redis.RangeAsync();
             return redisResult.ToList();
 
@@ -274,6 +298,30 @@ public class RedisDb : IRedisDb
             s_logger.ZLogError(
                   $"ErrorMessage: Farming Item Error");
             return null;
+        }
+    }
+
+    public async Task<ErrorCode> DeleteKilledNPCList(Int32 uid, Int32 stageCode)
+    {
+        try
+        {
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
+            var redisResult = await redis.DeleteAsync();
+
+            if (redisResult == false)
+            {
+                s_logger.ZLogError(
+                 $"ErrorMessage: Delete Killed NPC List Error");
+                return ErrorCode.DeleteKilledNPCListFail;
+            }
+            return ErrorCode.None;
+
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Farming Item Error");
+            return ErrorCode.DeleteKilledNPCListFail;
         }
     }
 

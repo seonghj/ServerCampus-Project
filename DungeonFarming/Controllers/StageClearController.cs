@@ -14,13 +14,13 @@ namespace DungeonFarming.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class KillNPC : ControllerBase
+public class StageClear : ControllerBase
 {
     readonly IGameDb _gameDb;
     readonly ILogger<Login> _logger;
     readonly IRedisDb _redisDb;
 
-    public KillNPC(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
+    public StageClear(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
     {
         _logger = logger;
         _gameDb = gameDb;
@@ -28,28 +28,24 @@ public class KillNPC : ControllerBase
     }
 
     [HttpPost]
-    public async Task<KillNPCResponse> Post(KillNPCRequest request)
+    public async Task<StageClearResponse> Post(StageClearRequest request)
     {
-        var response = new KillNPCResponse();
+        var response = new StageClearResponse();
 
         List<int> currKilledNpcs = new List<int>(await _redisDb.GetKilledNPCList(request.UID, request.StageCode));
 
-        response.Result = _gameDb.CheckCanKillNPC(request.NPCCode, request.StageCode, currKilledNpcs);
+        var errorCode = _gameDb.CheckClearStage(request.StageCode, currKilledNpcs);
 
-        if (response.Result != ErrorCode.None)
-        {
-            response.Result = ErrorCode.NotExistItemInStage;
-            return response;
-        }
-
-        var errorCode = await _redisDb.PlayerKillNPC(request.UID, request.NPCCode, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
-            response.Result = errorCode;
+            response.Result = ErrorCode.PlayerClearStageDisable;
             return response;
         }
+
+
+
         response.Result = errorCode;
-        _logger.ZLogInformationWithPayload(new { UID = request.UID }, "Save Killed NPC Data In Redis Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, $"Player Stage {request.StageCode} Clear Success");
         return response;
     }
 }

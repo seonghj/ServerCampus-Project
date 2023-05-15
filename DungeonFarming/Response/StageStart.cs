@@ -12,7 +12,7 @@ public class StageStartResponse
     [Required]
     public bool CanStart { get; set; } = false;
 
-    public List<Int32> ItemCodeList { get; set; } = null;
+    public List<ItemCodeAndCount> ItemList { get; set; } = null;
 
     public List<NPCInfo> NPCList { get; set; } = null;
 

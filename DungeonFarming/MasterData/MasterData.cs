@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Linq;
+using System.Security.Principal;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DungeonFarming.DBTableFormat;
@@ -160,25 +161,21 @@ public class MasterData:IMasterData
 
             foreach (var stageitems in result.ToList())
             {
-                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(stageitems.ItemCode);
+                List<ItemCodeAndCount> list = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(stageitems.Item);
 
+                List<Int32> itemList = new List<Int32>();
                 Dictionary<Int32, Int32> itemCount = new Dictionary<Int32, Int32>();
                 foreach (var it in list)
                 {
-                    if (itemCount.ContainsKey(it) == true)
-                    {
-                        itemCount[it] += 1;
-                    }
-                    else
-                    {
-                        itemCount.Add(it, 1);
-                    }
+                    itemList.Add(it.ItemCode);
+                    itemCount.Add(it.ItemCode, it.ItemCount);
                 }
 
                 StageItemDict.Add(stageitems.Code, new StageItem
                 {
                     Code = stageitems.Code,
-                    ItemCode = list,
+                    ItemInfoList = list,
+                    ItemCode = itemList,
                     ItemCount = itemCount
                 });
             }
@@ -298,25 +295,21 @@ public class MasterData:IMasterData
 
             foreach (var stageitems in result5.ToList())
             {
-                List<Int32> list = JsonSerializer.Deserialize<List<Int32>>(stageitems.ItemCode);
+                List<ItemCodeAndCount> list = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(stageitems.Item);
 
+                List<Int32> itemList = new List<Int32>();
                 Dictionary<Int32, Int32> itemCount = new Dictionary<Int32, Int32>();
                 foreach (var it in list)
                 {
-                    if (itemCount.ContainsKey(it) == true)
-                    {
-                        itemCount[it] += 1;
-                    }
-                    else
-                    {
-                        itemCount.Add(it, 1);
-                    }
+                    itemList.Add(it.ItemCode);
+                    itemCount.Add(it.ItemCode, it.ItemCount);
                 }
 
                 StageItemDict.Add(stageitems.Code, new StageItem
                 {
                     Code = stageitems.Code,
-                    ItemCode = list,
+                    ItemInfoList = list,
+                    ItemCode = itemList,
                     ItemCount = itemCount
                 });
             }
