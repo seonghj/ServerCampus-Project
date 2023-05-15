@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
+using DungeonFarming.MasterData;
 
 namespace DungeonFarming.Controllers;
 
@@ -32,7 +33,7 @@ public class FarmingItem : ControllerBase
     {
         var response = new FarmingItemResponse();
 
-        List<int> currFarmingItems = new List<int>(await _redisDb.GetFarmingItemList(request.UID, request.StageCode));
+        List<ItemCodeAndCount> currFarmingItems = await _redisDb.GetFarmingItemList(request.UID, request.StageCode);
 
         response.Result = _gameDb.CheckCanFarmingItem(request.ItemCode, request.StageCode, currFarmingItems);
 
@@ -42,7 +43,7 @@ public class FarmingItem : ControllerBase
             return response;
         }
 
-        var errorCode = await _redisDb.PlayerFarmingItem(request.UID, request.ItemCode, request.StageCode);
+        var errorCode = await _redisDb.PlayerFarmingItem(request.UID, request.ItemCode, request.ItemCount, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

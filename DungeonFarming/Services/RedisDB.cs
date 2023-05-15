@@ -11,6 +11,8 @@ using Microsoft.Extensions.Options;
 using DungeonFarming.ResponseFormat;
 using System.Reflection.Emit;
 using DungeonFarming.MasterData;
+using System.Text.Json;
+using StackExchange.Redis;
 
 namespace DungeonFarming.Services;
 
@@ -208,12 +210,17 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 stageCode)
+    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode)
     {
         try
         { 
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
-            var redisResult = await redis.LeftPushAsync(ItemCode, null);
+            var redis = new RedisList<ItemCodeAndCount>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
+            ItemCodeAndCount insertData = new ItemCodeAndCount() { 
+                ItemCode = ItemCode,
+                ItemCount = ItemCount
+            };
+
+            var redisResult = await redis.LeftPushAsync(insertData, null);
             return ErrorCode.None;
 
         }
@@ -225,13 +232,28 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<int>> GetFarmingItemList(Int32 uid, Int32 stageCode)
+    public async Task<List<ItemCodeAndCount>> GetFarmingItemList(Int32 uid, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
+            var redis = new RedisList<ItemCodeAndCount>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
             var redisResult = await redis.RangeAsync();
-            return redisResult.ToList();
+
+            if (redisResult.Length == 0 || redisResult == null)
+            {
+                return null;
+            }
+
+            List<ItemCodeAndCount> farmingItemList = new List<ItemCodeAndCount>();
+
+            foreach (var item in redisResult.ToArray())
+            {
+                farmingItemList.Add(item);
+            }
+
+            return farmingItemList.ToList();
+
+            return null;
 
         }
         catch(Exception ex) 
@@ -246,7 +268,7 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}_{stageCode}_{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
             var redisResult = await redis.DeleteAsync();
 
             if (redisResult == false)
@@ -270,7 +292,7 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
             var redisResult = await redis.LeftPushAsync(NPCCode, null);
 
             return ErrorCode.None;
@@ -288,7 +310,7 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
             var redisResult = await redis.RangeAsync();
             return redisResult.ToList();
 
@@ -305,7 +327,7 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}_{stageCode}_{uid}", null);
+            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
             var redisResult = await redis.DeleteAsync();
 
             if (redisResult == false)

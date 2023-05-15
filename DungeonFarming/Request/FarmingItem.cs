@@ -12,5 +12,8 @@ public class FarmingItemRequest : AuthRequest
     public Int32 ItemCode { get; set; }
 
     [Required]
+    public Int32 ItemCount { get; set; }
+
+    [Required]
     public Int32 StageCode { get; set; }
 }

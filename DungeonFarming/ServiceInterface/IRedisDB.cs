@@ -1,4 +1,5 @@
 ﻿using DungeonFarming.DBTableFormat;
+using DungeonFarming.MasterData;
 using DungeonFarming.ResponseFormat;
 using Microsoft.Extensions.Options;
 using System;
@@ -9,6 +10,7 @@ namespace DungeonFarming.Services;
 public interface IRedisDb
 {
     public void Init(string address);
+
     public Task<ErrorCode> InsertPlayerAuthAsync(string accountid);
 
     public Task<(ErrorCode, AuthPlayer)> GetPlayerAuthAsync(string accountid);
@@ -23,11 +25,11 @@ public interface IRedisDb
 
     public Task<bool> DeleteRequestLockAsync(string key);
 
-    public Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 stageCode);
+    public Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode);
 
     public Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode, Int32 stageCode);
 
-    public Task<List<int>> GetFarmingItemList(Int32 uid, Int32 stageCode);
+    public Task<List<ItemCodeAndCount>> GetFarmingItemList(Int32 uid, Int32 stageCode);
 
     public Task<List<int>> GetKilledNPCList(Int32 uid, Int32 stageCode);
 

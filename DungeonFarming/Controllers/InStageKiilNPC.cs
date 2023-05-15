@@ -32,7 +32,7 @@ public class KillNPC : ControllerBase
     {
         var response = new KillNPCResponse();
 
-        List<int> currKilledNpcs = new List<int>(await _redisDb.GetKilledNPCList(request.UID, request.StageCode));
+        List<int> currKilledNpcs = await _redisDb.GetKilledNPCList(request.UID, request.StageCode);
 
         response.Result = _gameDb.CheckCanKillNPC(request.NPCCode, request.StageCode, currKilledNpcs);
 

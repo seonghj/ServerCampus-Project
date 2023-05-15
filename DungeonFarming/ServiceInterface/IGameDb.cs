@@ -47,7 +47,7 @@ public interface IGameDb : IDisposable
 
     public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode);
 
-    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<Int32> farmingItemList);
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<ItemCodeAndCount> farmingItemList);
 
     public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, List<Int32> currKilledNpc);
 

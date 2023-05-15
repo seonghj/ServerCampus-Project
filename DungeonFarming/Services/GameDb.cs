@@ -713,14 +713,14 @@ public class GameDb : IGameDb
         return _MasterData.StageItemDict[stageCode].ItemCode.Contains(itemCode);
     }
 
-    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<Int32> CurrFarmingItems)
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<ItemCodeAndCount> CurrFarmingItems)
     {
         if (CheckItemExistInStage(itemCode, stageCode) == false)
         {
             return ErrorCode.NotExistItemInStage;
         }
 
-        if (CurrFarmingItems.Count == 0)
+        if (CurrFarmingItems == null)
         {
             return ErrorCode.None;
         }
@@ -729,7 +729,7 @@ public class GameDb : IGameDb
 
         foreach(var item in CurrFarmingItems)
         {
-            leftItemCount[item] -= 1;
+            leftItemCount[item.ItemCode] -= item.ItemCount;
         }
 
         if (leftItemCount[itemCode] > 0)
@@ -805,15 +805,15 @@ public class GameDb : IGameDb
         return ErrorCode.None;
     }
 
-    public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<Int32> earnItemList)
-    {
-        List<PlayerItemForClient> itemList = new List<PlayerItemForClient>();
+    //public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<Int32> earnItemList)
+    //{
+    //    List<PlayerItemForClient> itemList = new List<PlayerItemForClient>();
 
-        foreach (var itemCode in earnItemList)
-        {
-            PlayerItem item = MakeItem(uid, itemCode, 1);
-        }
-    }
+    //    foreach (var itemCode in earnItemList)
+    //    {
+    //        PlayerItem item = MakeItem(uid, itemCode, 1);
+    //    }
+    //}
 
 
     private void GameDBOpen()

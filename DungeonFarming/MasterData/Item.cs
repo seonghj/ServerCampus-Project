@@ -20,7 +20,7 @@ public class Item
 
 public class ItemCodeAndCount
 {
-    public Int32 ItemCode { get; set; }
+    public Int32 ItemCode { get; set; } = 0;
 
-    public Int32 ItemCount { get; set; }
+    public Int32 ItemCount { get; set; } = 0;
 }
