@@ -17,6 +17,8 @@ public interface IGameDb : IDisposable
 
     public Task<ErrorCode> DeletePlayerItem(Int32 itemUniqueID);
 
+    public Task<ErrorCode> DeletePlayerItem(Int32 uid, Int32 itemCode, DateTime createdAt);
+
     public Task<ErrorCode> DeleteMail(Int32 mailCode);
 
     public Task<(ErrorCode, PlayerInfo)> GetPlayerInfo(string AccountId);
@@ -45,11 +47,19 @@ public interface IGameDb : IDisposable
 
     public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode);
 
+    public Int32 GetItemMaxCount(Int32 itemCode, Int32 stageCode);
+
     public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode);
 
-    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<ItemCodeAndCount> farmingItemList);
+    public Int32 GetNPCMaxCount(Int32 NpcCode, Int32 stageCode);
 
-    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, List<Int32> currKilledNpc);
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 itemCount, Int32 stageCode, InStageItem currfarmingItem);
 
-    public ErrorCode CheckClearStage(Int32 stageCode, List<Int32> currKilledNpc);
+    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, InStageNpc currKilledNpc);
+
+    public ErrorCode CheckClearStage(Int32 stageCode, List<InStageNpc> currKilledNpc);
+
+    public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<InStageItem> earnItemList);
+
+    public Task<(ErrorCode, Int32)> EarnExpAfterClearStage(Int32 uid, Int32 stageCode, List<InStageNpc> killedNpcs);
 }

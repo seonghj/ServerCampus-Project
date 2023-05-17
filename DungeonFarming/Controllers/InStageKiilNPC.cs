@@ -32,7 +32,7 @@ public class KillNPC : ControllerBase
     {
         var response = new KillNPCResponse();
 
-        List<int> currKilledNpcs = await _redisDb.GetKilledNPCList(request.UID, request.StageCode);
+        InStageNpc currKilledNpcs = await _redisDb.GetKilledNPC(request.UID, request.NPCCode, request.StageCode);
 
         response.Result = _gameDb.CheckCanKillNPC(request.NPCCode, request.StageCode, currKilledNpcs);
 
@@ -42,7 +42,9 @@ public class KillNPC : ControllerBase
             return response;
         }
 
-        var errorCode = await _redisDb.PlayerKillNPC(request.UID, request.NPCCode, request.StageCode);
+        Int32 maxCount = _gameDb.GetNPCMaxCount(request.NPCCode, request.StageCode);
+
+        var errorCode = await _redisDb.PlayerKillNPC(request.UID, request.NPCCode, request.StageCode, maxCount);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

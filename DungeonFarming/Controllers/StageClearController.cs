@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
+using DungeonFarming.MasterData;
 
 namespace DungeonFarming.Controllers;
 
@@ -32,17 +33,36 @@ public class StageClear : ControllerBase
     {
         var response = new StageClearResponse();
 
-        List<int> currKilledNpcs = new List<int>(await _redisDb.GetKilledNPCList(request.UID, request.StageCode));
+        Int32 uid = request.UID;
+        Int32 stageCode = request.StageCode;
 
-        var errorCode = _gameDb.CheckClearStage(request.StageCode, currKilledNpcs);
+        List<InStageNpc> currKilledNpcList= await _redisDb.GetKilledNPCList(uid, stageCode);
 
+        var errorCode = _gameDb.CheckClearStage(request.StageCode, currKilledNpcList);
         if (errorCode != ErrorCode.None)
         {
-            response.Result = ErrorCode.PlayerClearStageDisable;
+            response.Result = errorCode;
             return response;
         }
 
+        List<InStageItem> itemList = await _redisDb.GetFarmingItemListAll(uid, stageCode);
 
+        (errorCode, response.EarnItemList) = await _gameDb.EarnItemAfterStageClear(uid, itemList);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+        errorCode = await _redisDb.DeleteFarmingItemList(uid, stageCode);
+
+        (errorCode, response.EarnEXP) = await _gameDb.EarnExpAfterClearStage(uid, stageCode, currKilledNpcList);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        errorCode = await _redisDb.DeleteKilledNPCList(uid, stageCode);
 
         response.Result = errorCode;
         _logger.ZLogInformationWithPayload(new { UID = request.UID }, $"Player Stage {request.StageCode} Clear Success");

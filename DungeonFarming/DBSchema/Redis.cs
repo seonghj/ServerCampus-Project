@@ -18,3 +18,19 @@ public class NoticeContent
     public string title { get; set; } = "";
     public string Content { get; set; } = "";
 }
+
+public class InStageItem
+{
+    public Int32 ItemCode { get; set; }
+    public Int32 ItemCount { get; set; }
+    public Int32 MaxCount { get; set; }
+    public DateTime FarmingTime { get; set; }
+}
+
+public class InStageNpc
+{
+    public Int32 NpcCode { get; set; }
+    public Int32 NpcCount { get; set; }
+    public Int32 MaxCount { get; set; }
+    public DateTime KillTime { get; set; }
+}

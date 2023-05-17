@@ -77,7 +77,10 @@ public enum ErrorCode : UInt16
     SendStageInfoFail = 6004,
     FarmingItemFail = 6005,
     NotExistItemInStage = 6006,
-    DeleteFarmingItemListFail = 6007,
-    DeleteKilledNPCListFail = 6008,
-    PlayerClearStageDisable = 6009
+    NotExistNPCInStage = 6007,
+    DeleteFarmingItemListFail = 6008,
+    DeleteKilledNPCListFail = 6009,
+    PlayerClearStageDisable = 6010,
+    EarnStageClearItemRewordsFail = 6011,
+    EarnStageClearExpRewordsFail = 6012
 }

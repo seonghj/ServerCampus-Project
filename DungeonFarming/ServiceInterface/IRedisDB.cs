@@ -25,13 +25,17 @@ public interface IRedisDb
 
     public Task<bool> DeleteRequestLockAsync(string key);
 
-    public Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode);
+    public Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode, Int32 maxCount);
 
-    public Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode, Int32 stageCode);
+    public Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NpcCode, Int32 stageCode, Int32 maxCount);
 
-    public Task<List<ItemCodeAndCount>> GetFarmingItemList(Int32 uid, Int32 stageCode);
+    public Task<InStageItem> GetFarmingItem(Int32 uid, Int32 itemCode, Int32 stageCode);
 
-    public Task<List<int>> GetKilledNPCList(Int32 uid, Int32 stageCode);
+    public Task<List<InStageItem>> GetFarmingItemListAll(Int32 uid, Int32 stageCode);
+
+    public Task<InStageNpc> GetKilledNPC(Int32 uid, Int32 NpcCode, Int32 stageCode);
+
+    public Task<List<InStageNpc>> GetKilledNPCList(Int32 uid, Int32 stageCode);
 
     public Task<ErrorCode> DeleteFarmingItemList(Int32 uid, Int32 stageCode);
 

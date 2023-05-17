@@ -98,7 +98,8 @@ public class GameDb : IGameDb
             Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
             Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
             EnhanceCount = 0,
-            ItemCount = 1
+            ItemCount = 1,
+            CreateAt = DateTime.Now
         };
 
         return basicItem;
@@ -107,7 +108,7 @@ public class GameDb : IGameDb
     private PlayerItem MakeItem(Int32 uid, Int32 itemCode, Int32 itemCount)
     {
         Item masterItemData = _MasterData.ItemDict[itemCode];
-        PlayerItem basicItem = new PlayerItem
+        PlayerItem Item = new PlayerItem
         {
             UID = uid,
             ItemCode = itemCode,
@@ -115,10 +116,11 @@ public class GameDb : IGameDb
             Defence = masterItemData.Defence,
             Magic = masterItemData.Magic,
             EnhanceCount = 0,
-            ItemCount = itemCount
+            ItemCount = itemCount,
+            CreateAt = DateTime.Now
         };
 
-        return basicItem;
+        return Item;
     }
 
     private PlayerItemForClient MakePlayerItemForClient(PlayerItem item)
@@ -131,6 +133,7 @@ public class GameDb : IGameDb
             EnhanceCount = item.EnhanceCount,
             Magic = item.Magic,
             ItemCount = item.ItemCount,
+            CreateAt = item.CreateAt
         };
 
         return iteminfo;
@@ -273,6 +276,29 @@ public class GameDb : IGameDb
         }
     }
 
+    public async Task<ErrorCode> DeletePlayerItem(Int32 uid, Int32 itemCode, DateTime createdAt)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("PlayerItem").Where("UID", uid)
+                .Where("ItemCode", itemCode).Where("CreatedAt", createdAt).Limit(1).DeleteAsync();
+
+            if (result == 0)
+            {
+                _logger.ZLogError(
+               $"[GameDb.Delete Item] ErrorMessage : Player Item Not Exist / ItemCode: {itemCode} / CreatedAt: {createdAt}");
+                return ErrorCode.DeleteItemFail;
+            }
+            return ErrorCode.None;
+        }
+        catch
+        {
+            _logger.ZLogError(
+              $"[GameDb.Delete Item] ErrorCode : {ErrorCode.DeleteItemFail} / ItemCode: {itemCode} / CreatedAt: {createdAt}");
+            return ErrorCode.DeleteItemFail;
+        }
+    }
+
     public async Task<ErrorCode> DeleteMail(Int32 mailCode)
     {
         try
@@ -304,7 +330,7 @@ public class GameDb : IGameDb
         try
         {
 
-            Item masterItemData = _MasterData.ItemDict[itemCode];
+            Item masterItemData = new Item();
 
             PlayerItem insertData = MakeItem(uid, itemCode, itemCount);
 
@@ -696,8 +722,7 @@ public class GameDb : IGameDb
         }
         catch(Exception ex) 
         {
-            Console.WriteLine(ex.ToString());   
-            _logger.ZLogError(
+            _logger.ZLogError(ex,
                    $"ErrorMessage: Check Start Stage Error");
             return (ErrorCode.CheckStartStageError, false);
         }
@@ -713,35 +738,41 @@ public class GameDb : IGameDb
         return _MasterData.StageItemDict[stageCode].ItemCode.Contains(itemCode);
     }
 
-    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 stageCode, List<ItemCodeAndCount> CurrFarmingItems)
+    public Int32 GetItemMaxCount(Int32 itemCode, Int32 stageCode)
+    {
+        return _MasterData.StageItemDict[stageCode].ItemCount[itemCode];
+    }
+
+    public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 itemCount, Int32 stageCode, InStageItem currFarmingItem)
     {
         if (CheckItemExistInStage(itemCode, stageCode) == false)
         {
             return ErrorCode.NotExistItemInStage;
         }
 
-        if (CurrFarmingItems == null)
+        if (currFarmingItem == null)
         {
             return ErrorCode.None;
         }
 
-        Dictionary<int, int> leftItemCount = new Dictionary<int, int>(_MasterData.StageItemDict[stageCode].ItemCount);
+        Int32 currCount = currFarmingItem.ItemCount;
+        Int32 maxCount = currFarmingItem.MaxCount;
 
-        foreach(var item in CurrFarmingItems)
+        if (currCount + itemCount > maxCount)
         {
-            leftItemCount[item.ItemCode] -= item.ItemCount;
+            return ErrorCode.NotExistItemInStage;
         }
-
-        if (leftItemCount[itemCode] > 0)
-        {
-            return ErrorCode.None;
-        }
-        return ErrorCode.NotExistItemInStage;
+        return ErrorCode.None;
     }
 
     public List<NPCInfo> GetStageNPCInfo(Int32 uid, Int32 stageCode)
     {
         return _MasterData.StageNPCDict[stageCode].NPCInfoList;
+    }
+
+    public Int32 GetNPCMaxCount(Int32 NpcCode, Int32 stageCode)
+    {
+        return _MasterData.StageNPCDict[stageCode].NPCCount[NpcCode];
     }
 
     public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode)
@@ -756,34 +787,29 @@ public class GameDb : IGameDb
         return isExist;
     }
 
-    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, List<Int32> currKilledNpc)
+    public ErrorCode CheckCanKillNPC(Int32 npcCode, Int32 stageCode, InStageNpc currKilledNpc)
     {
         if (CheckNPCExistInStage(npcCode, stageCode) == false)
         {
             return ErrorCode.NotExistItemInStage;
         }
 
-        if (currKilledNpc.Count == 0)
+        if (currKilledNpc == null)
         {
             return ErrorCode.None;
         }
 
-        Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.StageNPCDict[stageCode].NPCCount);
+        Int32 currCount = currKilledNpc.NpcCount;
+        Int32 maxCount = currKilledNpc.MaxCount;
 
-        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCList)
+        if (currCount + 1 > maxCount)
         {
-            int cnt = currKilledNpc.Count(x => x == npc);
-            leftNPCCount[npc] -= cnt;
+            return ErrorCode.NotExistItemInStage;
         }
-
-        if (leftNPCCount[npcCode] > 0)
-        {
-            return ErrorCode.None;
-        }
-        return ErrorCode.NotExistItemInStage;
+        return ErrorCode.None;
     }
 
-    public ErrorCode CheckClearStage(Int32 stageCode, List<Int32> currKilledNpc)
+    public ErrorCode CheckClearStage(Int32 stageCode, List<InStageNpc> currKilledNpc)
     {
         if (currKilledNpc.Count == 0)
         {
@@ -792,12 +818,11 @@ public class GameDb : IGameDb
 
         Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.StageNPCDict[stageCode].NPCCount);
 
-        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCList)
+        foreach (var npc in currKilledNpc)
         {
-            int cnt = currKilledNpc.Count(x => x == npc);
-            leftNPCCount[npc] -= cnt;
+            leftNPCCount[npc.NpcCode] -= npc.NpcCount;
 
-            if (leftNPCCount[npc] > 0)
+            if (leftNPCCount[npc.NpcCode] > 0)
             {
                 return ErrorCode.PlayerClearStageDisable;
             }
@@ -805,15 +830,66 @@ public class GameDb : IGameDb
         return ErrorCode.None;
     }
 
-    //public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<Int32> earnItemList)
-    //{
-    //    List<PlayerItemForClient> itemList = new List<PlayerItemForClient>();
+    public async Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<InStageItem> earnItemList)
+    {
+        List<PlayerItemForClient> itemList = new List<PlayerItemForClient>();
 
-    //    foreach (var itemCode in earnItemList)
-    //    {
-    //        PlayerItem item = MakeItem(uid, itemCode, 1);
-    //    }
-    //}
+        if (earnItemList == null || earnItemList.Count == 0)
+        {
+            return (ErrorCode.None, null);
+        }
+
+        try
+        {
+            foreach (var it in earnItemList)
+            {
+                (var insertResult, var itemData) = await InsertPlayerItem(uid, it.ItemCode, it.ItemCount);
+                itemList.Add(itemData);
+            }
+
+
+            return (ErrorCode.None, itemList);
+        }
+
+       catch (Exception ex)
+        {
+            if (itemList.Count > 0)
+            {
+                foreach(var item in itemList)
+                {
+                    await DeletePlayerItem(uid, item.ItemCode, item.CreateAt);
+                }
+            }
+
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Earn Stage Item Rewords Error");
+            return (ErrorCode.EarnStageClearItemRewordsFail, null);
+        }
+    }
+
+    public async Task<(ErrorCode, Int32)> EarnExpAfterClearStage(Int32 uid, Int32 stageCode, List<InStageNpc> killedNpcs)
+    {
+        Int32 earnExp = 0;
+        try
+        {
+            foreach(var npcInfo in killedNpcs)
+            {
+                Int32 npcExp = _MasterData.StageNPCDict[stageCode].NPCExp[npcInfo.NpcCode];
+                earnExp += npcExp * npcInfo.NpcCount;
+            }
+
+            var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid).
+                IncrementAsync("EXP", earnExp);
+
+            return (ErrorCode.None, earnExp);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Earn Stage Exp Rewords Error");
+            return (ErrorCode.EarnStageClearExpRewordsFail, 0);
+        }
+    }
 
 
     private void GameDBOpen()

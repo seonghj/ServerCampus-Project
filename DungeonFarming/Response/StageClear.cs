@@ -1,4 +1,5 @@
-﻿using DungeonFarming.MasterData;
+﻿using DungeonFarming.DBTableFormat;
+using DungeonFarming.MasterData;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -9,8 +10,8 @@ public class StageClearResponse
     [Required]
     public ErrorCode Result { get; set; } = ErrorCode.None;
 
-    public List<Int32> ItemCodeList { get; set; } = null;
+    public List<PlayerItemForClient> EarnItemList { get; set; } = null;
 
-    public List<NPCInfo> NPCList { get; set; } = null;
+    public Int32 EarnEXP { get; set; } = 0;
 
 }

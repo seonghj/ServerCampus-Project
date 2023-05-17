@@ -13,6 +13,8 @@ using System.Reflection.Emit;
 using DungeonFarming.MasterData;
 using System.Text.Json;
 using StackExchange.Redis;
+using DungeonFarming.Controllers;
+using System.Collections.Generic;
 
 namespace DungeonFarming.Services;
 
@@ -28,8 +30,18 @@ public class RedisDb : IRedisDb
     {
         var config = new RedisConfig("default", address);
         _redisConn = new RedisConnection(config);
-
         s_logger.ZLogDebug($"userDbAddress:{address}");
+
+    }
+
+    private string MakeFarmingItemKey(Int32 uid, Int32 stageCode)
+    {
+        return $"{FarmingItemKey}{stageCode}_{uid}";
+    }
+
+    private string MakeKilledNpcKey(Int32 uid, Int32 stageCode)
+    {
+        return $"{KilledNPCKey}{stageCode}_{uid}";
     }
 
     // 인증키
@@ -210,17 +222,40 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode)
+    public async Task<ErrorCode> PlayerFarmingItem(Int32 uid, Int32 ItemCode, Int32 ItemCount, Int32 stageCode, Int32 maxCount)
     {
         try
         { 
-            var redis = new RedisList<ItemCodeAndCount>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
-            ItemCodeAndCount insertData = new ItemCodeAndCount() { 
+            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode), null);
+            InStageItem insertData = new InStageItem() { 
                 ItemCode = ItemCode,
-                ItemCount = ItemCount
+                ItemCount = ItemCount,
+                MaxCount = maxCount,
+                FarmingTime = DateTime.Now
             };
 
-            var redisResult = await redis.LeftPushAsync(insertData, null);
+            var gerOrSetResult = await redis.GetOrSetAsync(ItemCode, async (key) =>
+            {
+                return await Task.FromResult(insertData);
+            });
+
+            if (gerOrSetResult != null)
+            {
+                if (gerOrSetResult.FarmingTime != insertData.FarmingTime)
+                {
+                    Int32 currCount = gerOrSetResult.ItemCount;
+                    insertData.ItemCount = currCount + ItemCount;
+                    var setResult = await redis.SetAsync(ItemCode, insertData);
+                }
+            }
+            else
+            {
+                s_logger.ZLogError(
+                  $"ErrorMessage: Farming Item Error");
+                return ErrorCode.FarmingItemFail;
+            }
+
+
             return ErrorCode.None;
 
         }
@@ -232,28 +267,50 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<ItemCodeAndCount>> GetFarmingItemList(Int32 uid, Int32 stageCode)
+    public async Task<InStageItem> GetFarmingItem(Int32 uid, Int32 itemCode, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<ItemCodeAndCount>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
-            var redisResult = await redis.RangeAsync();
+            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode), null);
+            var redisResult = await redis.GetAsync(itemCode);
 
-            if (redisResult.Length == 0 || redisResult == null)
+            if (redisResult.HasValue == false)
+            {
+                s_logger.ZLogError(
+                  $"ErrorMessage: Farming Item Error");
+                return null;
+            }
+            return redisResult.Value;
+
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Farming Item Error");
+            return null;
+        }
+    }
+
+    public async Task<List<InStageItem>> GetFarmingItemListAll(Int32 uid, Int32 stageCode)
+    {
+        try
+        {
+            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode), null);
+            var redisResult = await redis.GetAllAsync();
+
+            if (redisResult.Count == 0 || redisResult == null)
             {
                 return null;
             }
 
-            List<ItemCodeAndCount> farmingItemList = new List<ItemCodeAndCount>();
+            List<InStageItem> farmingItemList = new List<InStageItem>();
 
             foreach (var item in redisResult.ToArray())
             {
-                farmingItemList.Add(item);
+                farmingItemList.Add(item.Value);
             }
 
             return farmingItemList.ToList();
-
-            return null;
 
         }
         catch(Exception ex) 
@@ -268,7 +325,7 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{FarmingItemKey}{stageCode}_{uid}", null);
+            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode), null);
             var redisResult = await redis.DeleteAsync();
 
             if (redisResult == false)
@@ -288,12 +345,41 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NPCCode, Int32 stageCode)
+
+
+    public async Task<ErrorCode> PlayerKillNPC(Int32 uid, Int32 NpcCode, Int32 stageCode, Int32 maxCount)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
-            var redisResult = await redis.LeftPushAsync(NPCCode, null);
+            InStageNpc insertData = new InStageNpc()
+            {
+                NpcCode = NpcCode,
+                NpcCount = 1,
+                MaxCount = maxCount,
+                KillTime = DateTime.Now
+            };
+
+            var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode), null);
+            var gerOrSetResult = await redis.GetOrSetAsync(NpcCode, async (key) =>
+            {
+                return await Task.FromResult(insertData);
+            });
+            if (gerOrSetResult != null)
+            {
+                if (gerOrSetResult.KillTime != insertData.KillTime)
+                {
+                    Int32 currCount = gerOrSetResult.NpcCount;
+                    insertData.NpcCount = currCount + 1;
+                    var setResult = await redis.SetAsync(NpcCode, insertData);
+                }
+            }
+            else
+            {
+                s_logger.ZLogError(
+                  $"ErrorMessage: Farming Item Error");
+                return ErrorCode.FarmingItemFail;
+            }
+
 
             return ErrorCode.None;
 
@@ -306,13 +392,45 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<int>> GetKilledNPCList(Int32 uid, Int32 stageCode)
+    public async Task<InStageNpc> GetKilledNPC(Int32 uid, Int32 npcCode, Int32 stageCode)
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
-            var redisResult = await redis.RangeAsync();
-            return redisResult.ToList();
+            var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode), null);
+            var redisResult = await redis.GetAsync(npcCode);
+
+            if (redisResult.HasValue == false)
+            {
+                s_logger.ZLogError(
+                  $"ErrorMessage: Get Killed NPC Info Error");
+                return null;
+            }
+            return redisResult.Value;
+
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Farming Item Error");
+            return null;
+        }
+    }
+
+    public async Task<List<InStageNpc>> GetKilledNPCList(Int32 uid, Int32 stageCode)
+    {
+        try
+        {
+            var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode), null);
+            var redisResult = await redis.GetAllAsync();
+
+            List<InStageNpc> npcList = new List<InStageNpc>();
+
+            foreach(var dic in redisResult)
+            {
+                npcList.Add(dic.Value);
+            }
+
+            return npcList;
 
         }
         catch
