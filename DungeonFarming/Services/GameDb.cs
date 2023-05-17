@@ -50,8 +50,9 @@ public class GameDb : IGameDb
     Int32 mailPageSize = 20;
     string ProductsMailTitle = "구매 상품";
     string AttendanceMailTitle = "출석 보상";
+    string StageClearRewordsMailTitle = "스테이지 클리어 보상";
 
-    DateTime attendanceRewordsExpireDate = DateTime.Now.AddDays(30).Date;
+    DateTime mailExpireDate = DateTime.Now.AddDays(30).Date;
     DateTime productsMailExpireDate = DateTime.Now.AddYears(1).Date;
 
     Int32 EnhanceItemPercentage = 30;
@@ -139,6 +140,23 @@ public class GameDb : IGameDb
         return iteminfo;
     }
 
+    private PlayerItemForClient MakePlayerItemForClient(Int32 itemCode, Int32 itemCount)
+    {
+        Item masterItemData = _MasterData.ItemDict[itemCode];
+        PlayerItemForClient iteminfo = new PlayerItemForClient
+        {
+            ItemCode = itemCode,
+            Attack = masterItemData.Attack,
+            Defence = masterItemData.Defence,
+            EnhanceCount = 0,
+            Magic = masterItemData.Magic,
+            ItemCount = itemCount,
+            CreateAt = DateTime.Now
+        };
+
+        return iteminfo;
+    }
+
     private Mail MakeMail(Int32 uid, string title, DateTime expirationDate, Int32 itemCode, Int32 itemCount)
     {
         DateTime CreateMailTime = DateTime.Now;
@@ -155,6 +173,16 @@ public class GameDb : IGameDb
         };
 
         return newMail;
+    }
+
+    private Receipt MakeReceipt(Int32 uid, Int32 productsCode, string receiptCode)
+    {
+        return new Receipt
+        {
+            UID = uid,
+            ReceiptCode = receiptCode,
+            ProductCode = productsCode
+        };
     }
 
     private async void DeleteInAppProductsMail(Int32 uid, Int32 productCode, DateTime createTime, DateTime expirationTime)
@@ -439,7 +467,6 @@ public class GameDb : IGameDb
         }
     }
 
-    // 우편함 기능
     public async Task<(ErrorCode, List<Mail>)> GetMailAsync(Int32 uid, Int32 page)
     {
         try
@@ -497,8 +524,46 @@ public class GameDb : IGameDb
         }
     }
 
+    public async Task<ErrorCode> InsertItemToMail(Int32 uid, object[][] itemList)
+    {
+        try
+        {
+            var insertQuery = _queryFactory.Query("Mail").AsInsert(MailCols, itemList);
+            var insertResult = await _queryFactory.ExecuteAsync(insertQuery);
 
-    // 출석부
+            if(insertResult != itemList.Length)
+            {
+                _logger.ZLogError(
+                  $"ErrorMessage: Insert Item To Mail Error");
+                return ErrorCode.SetMailFail;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                  $"ErrorMessage: Insert Item To Mail Error");
+            return ErrorCode.SetMailFail;
+        }
+    }
+
+    public async Task<ErrorCode> InsertItemToMail(Int32 uid, ItemCodeAndCount item, string title, DateTime expirationDate)
+    {
+        try
+        {
+            var insertResult = await _queryFactory.Query("Mail")
+               .InsertAsync(MakeMail(uid, title, expirationDate, item.ItemCode, item.ItemCount));
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                  $"ErrorMessage: Insert Item To Mail Error");
+            return ErrorCode.SetMailFail;
+        }
+    }
+
     public async Task<ErrorCode> SendAttendenceRewordsMail(Int32 uid)
     {
         PlayerInfo playerInfo = null;
@@ -544,9 +609,11 @@ public class GameDb : IGameDb
             DateTime CreateMailTime = DateTime.Now;
             DateTime ExpirationDate = DateTime.Now.AddDays(30).Date;
 
+            ItemCodeAndCount item = new ItemCodeAndCount { ItemCode = rewords.ItemCode, ItemCount = rewords.Count };
 
-            var insertResult = await _queryFactory.Query("Mail")
-                .InsertAsync(MakeMail(uid, AttendanceMailTitle, attendanceRewordsExpireDate, rewords.ItemCode, rewords.Count));
+            var insertResult = await InsertItemToMail(uid, item
+            , AttendanceMailTitle, mailExpireDate);
+           
             if (insertResult == 0)
             {
                 updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
@@ -583,7 +650,7 @@ public class GameDb : IGameDb
     {
         DateTime CreateMailTime = DateTime.Now;
         DateTime expirationTime = productsMailExpireDate;
-        var itemList = _MasterData.InAppProductDict[productCode].Item;
+        var itemList = new List<ItemCodeAndCount>(_MasterData.InAppProductDict[productCode].Item);
         var insertList = itemList.Select(item => new object[]
                 {uid,  $"{ProductsMailTitle}_{productCode}",expirationTime
                 ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
@@ -596,23 +663,10 @@ public class GameDb : IGameDb
                 return ErrorCode.ProductAlreadyPaid;
             }
 
-            var insertQuery = _queryFactory.Query("Mail").AsInsert(MailCols, insertList);
-            var insertResult = await _queryFactory.ExecuteAsync(insertQuery);
+            var insertResult = InsertItemToMail(uid, insertList);
 
-            if (insertResult != insertList.Length)
-            {
-                DeleteInAppProductsMail(uid, productCode, CreateMailTime, expirationTime);
-                _logger.ZLogError(
-                   $"ErrorMessage: Send Product Mail Error");
-                return ErrorCode.None;
-            }
-
-            var insertReceiptResult = await _queryFactory.Query("Receipt").InsertAsync(new
-            {
-                ReceiptCode = receiptCode,
-                UID = uid,
-                ProductCode = productCode
-            });
+            var insertReceiptResult = await _queryFactory.Query("Receipt")
+                .InsertAsync(MakeReceipt(uid, productCode, receiptCode));
 
             if (insertReceiptResult == 0)
             {
@@ -843,10 +897,32 @@ public class GameDb : IGameDb
         {
             foreach (var it in earnItemList)
             {
-                (var insertResult, var itemData) = await InsertPlayerItem(uid, it.ItemCode, it.ItemCount);
-                itemList.Add(itemData);
+                bool canOverlap = _MasterData.ItemDict[it.ItemCode].CanOverlap;
+
+                if (canOverlap == false)
+                {
+                    for (int i = 0; i <  it.ItemCount; i++) 
+                    {
+                        itemList.Add(MakePlayerItemForClient(it.ItemCode, 1));
+                    }
+                }
+                else
+                {
+                    itemList.Add(MakePlayerItemForClient(it.ItemCode, it.ItemCount));
+                }
             }
 
+
+            var insertList = itemList.Select(item => new object[]
+                {uid,  StageClearRewordsMailTitle ,mailExpireDate
+                ,false, DateTime.Now.Date, item.ItemCode, item.ItemCount}).ToArray();
+
+            var insertErrorCode = await InsertItemToMail(uid, insertList);
+
+            if (insertErrorCode != ErrorCode.None)
+            {
+                return (insertErrorCode, null);
+            }
 
             return (ErrorCode.None, itemList);
         }

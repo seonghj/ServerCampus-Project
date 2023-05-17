@@ -33,6 +33,10 @@ public interface IGameDb : IDisposable
 
     public Task<(ErrorCode, PlayerItemForClient)> ReceiveItemFromMail(Int32 uid, Int32 mailcode);
 
+    public Task<ErrorCode> InsertItemToMail(Int32 uid, object[][] itemList);
+
+    public Task<ErrorCode> InsertItemToMail(Int32 uid, ItemCodeAndCount item, string title, DateTime expirationDate);
+
     public Task<ErrorCode> SendAttendenceRewordsMail(Int32 uid);
 
     public Task<ErrorCode> InAppProductSentToMail(Int32 uid, Int32 productCode, string receiptCode);
