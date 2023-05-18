@@ -46,7 +46,7 @@ public class RedisDb : IRedisDb
 
     private TimeSpan StageDataExpireTime() 
     {
-        return TimeSpan.FromHours(RediskeyExpireTime.LoginKeyExpireHour);
+        return TimeSpan.FromHours(RediskeyExpireTime.InStageDataExpireHour);
     }
 
     // 인증키
@@ -291,7 +291,7 @@ public class RedisDb : IRedisDb
         try
         { 
             var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode)
-                , RediskeyExpireTime.InStageDataExpireMin);
+                , StageDataExpireTime());
             InStageItem insertData = new InStageItem() { 
                 ItemCode = ItemCode,
                 ItemCount = ItemCount,
@@ -423,7 +423,8 @@ public class RedisDb : IRedisDb
                 KillTime = DateTime.Now
             };
 
-            var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode), null);
+            var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode)
+                , StageDataExpireTime());
             var gerOrSetResult = await redis.GetOrSetAsync(NpcCode, async (key) =>
             {
                 return await Task.FromResult(insertData);
