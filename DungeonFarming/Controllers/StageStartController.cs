@@ -36,28 +36,28 @@ public class StageStart : ControllerBase
         var response = new StageStartResponse();
 
         (var errorCode, response.CanStart) = await _redisDb.CheckPlayerState(request.AccountID, PlayerState.Default);
-        if (errorCode != ErrorCode.None || response.CanStart == false)
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        errorCode = await _redisDb.InitInStageData(uid, stageCode);
+        if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
         (errorCode, response.CanStart) =  await _gameDb.CheckAbleStartStage(uid, stageCode);
-        if(errorCode != ErrorCode.None)
+        if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        response.ItemList = _gameDb.GetStageItemInfo(uid, stageCode);
-        if (response.ItemList == null)
-        {
-            response.Result = ErrorCode.GetStageDataFail;
-            return response;
-        }
-
-        response.NPCList = _gameDb.GetStageNPCInfo(uid, stageCode);
-        if (response.ItemList == null)
+        (response.ItemList, response.NPCList) = _gameDb.GetStageInfo(stageCode);
+        if (response.ItemList == null || response.ItemList == null)
         {
             response.Result = ErrorCode.GetStageDataFail;
             return response;

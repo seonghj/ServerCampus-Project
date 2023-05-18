@@ -45,9 +45,11 @@ public interface IGameDb : IDisposable
 
     public Task<(ErrorCode, bool)> CheckAbleStartStage(Int32 uid, Int32 stageCode);
 
-    public List<ItemCodeAndCount> GetStageItemInfo(Int32 uid, Int32 stageCode);
+    public List<ItemCodeAndCount> GetStageItemInfo(Int32 stageCode);
 
-    public List<NPCInfo> GetStageNPCInfo(Int32 uid, Int32 stageCode);
+    public List<NPCInfo> GetStageNPCInfo(Int32 stageCode);
+
+    public (List<ItemCodeAndCount>, List<NPCInfo>) GetStageInfo(Int32 stageCode);
 
     public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode);
 

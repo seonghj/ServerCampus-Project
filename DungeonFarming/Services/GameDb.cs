@@ -801,7 +801,7 @@ public class GameDb : IGameDb
         }
     }
 
-    public List<ItemCodeAndCount> GetStageItemInfo(Int32 uid, Int32 stageCode)
+    public List<ItemCodeAndCount> GetStageItemInfo(Int32 stageCode)
     {
         return _MasterData.StageItemDict[stageCode].ItemInfoList;
     }
@@ -838,9 +838,14 @@ public class GameDb : IGameDb
         return ErrorCode.None;
     }
 
-    public List<NPCInfo> GetStageNPCInfo(Int32 uid, Int32 stageCode)
+    public List<NPCInfo> GetStageNPCInfo(Int32 stageCode)
     {
         return _MasterData.StageNPCDict[stageCode].NPCInfoList;
+    }
+
+    public (List<ItemCodeAndCount>, List<NPCInfo>) GetStageInfo(Int32 stageCode)
+    {
+        return (GetStageItemInfo(stageCode), GetStageNPCInfo(stageCode));
     }
 
     public Int32 GetNPCMaxCount(Int32 NpcCode, Int32 stageCode)
