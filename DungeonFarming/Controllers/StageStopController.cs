@@ -15,13 +15,13 @@ namespace DungeonFarming.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class FarmingItem : ControllerBase
+public class StageStopController : ControllerBase
 {
     readonly IGameDb _gameDb;
     readonly ILogger<Login> _logger;
     readonly IRedisDb _redisDb;
 
-    public FarmingItem(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
+    public StageStopController(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
     {
         _logger = logger;
         _gameDb = gameDb;
@@ -29,9 +29,12 @@ public class FarmingItem : ControllerBase
     }
 
     [HttpPost]
-    public async Task<FarmingItemResponse> Post(FarmingItemRequest request)
+    public async Task<StageStopResponse> Post(StageStopRequest request)
     {
-        var response = new FarmingItemResponse();
+        var response = new StageStopResponse();
+
+        Int32 uid = request.UID;
+        Int32 stageCode = request.StageCode;
 
         (var errorCode, var isInStage) = await _redisDb.CheckPlayerState(request.AccountID, PlayerState.InStage);
         if (errorCode != ErrorCode.None || isInStage == false)
@@ -40,27 +43,17 @@ public class FarmingItem : ControllerBase
             return response;
         }
 
-        InStageItem currFarmingItem = await _redisDb.GetFarmingItem(request.UID, request.ItemCode, request.StageCode);
-
-        response.Result = _gameDb.CheckCanFarmingItem(request.ItemCode, request.ItemCount, request.StageCode, currFarmingItem);
-
-        if (response.Result != ErrorCode.None)
-        {
-            response.Result = ErrorCode.NotExistItemInStage;
-            return response;
-        }
-
-        Int32 maxCount = _gameDb.GetItemMaxCount(request.ItemCode, request.StageCode);
-
-        errorCode = await _redisDb.PlayerFarmingItem(request.UID, request.ItemCode
-            , request.ItemCount, request.StageCode, maxCount);
+        errorCode = await _redisDb.ChangePlayerState(request.AccountID, PlayerState.Default);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
+
+        errorCode = await _redisDb.InitInStageData(uid, stageCode);
+
         response.Result = errorCode;
-        _logger.ZLogInformationWithPayload(new { UID = request.UID}, "Save Farming Item Data In Redis Success");
+        _logger.ZLogInformationWithPayload(new { UID = request.UID }, $"Player Stage {request.StageCode} Clear Success");
         return response;
     }
 }

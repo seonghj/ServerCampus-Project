@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
+using DungeonFarming.DBTableFormat;
 
 namespace DungeonFarming.Controllers;
 

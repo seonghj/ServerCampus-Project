@@ -32,6 +32,13 @@ public class KillNPC : ControllerBase
     {
         var response = new KillNPCResponse();
 
+        (var errorCode, var isInStage) = await _redisDb.CheckPlayerState(request.AccountID, PlayerState.InStage);
+        if (errorCode != ErrorCode.None || isInStage == false)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
         InStageNpc currKilledNpcs = await _redisDb.GetKilledNPC(request.UID, request.NPCCode, request.StageCode);
 
         response.Result = _gameDb.CheckCanKillNPC(request.NPCCode, request.StageCode, currKilledNpcs);
@@ -44,7 +51,7 @@ public class KillNPC : ControllerBase
 
         Int32 maxCount = _gameDb.GetNPCMaxCount(request.NPCCode, request.StageCode);
 
-        var errorCode = await _redisDb.PlayerKillNPC(request.UID, request.NPCCode, request.StageCode, maxCount);
+        errorCode = await _redisDb.PlayerKillNPC(request.UID, request.NPCCode, request.StageCode, maxCount);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

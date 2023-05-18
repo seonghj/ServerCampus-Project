@@ -44,6 +44,11 @@ public class RedisDb : IRedisDb
         return $"{KilledNPCKey}{stageCode}_{uid}";
     }
 
+    private TimeSpan StageDataExpireTime() 
+    {
+        return TimeSpan.FromHours(RediskeyExpireTime.LoginKeyExpireHour);
+    }
+
     // 인증키
     public async Task<ErrorCode> InsertPlayerAuthAsync(string accountid)
     {
@@ -125,6 +130,67 @@ public class RedisDb : IRedisDb
         }
     }
 
+    public async Task<(ErrorCode, bool)> CheckPlayerState(string accountid, PlayerState state)
+    {
+        try
+        {
+            var redis = new RedisString<AuthPlayer>(_redisConn, accountid, null);
+            var result = await redis.GetAsync();
+            if (!result.HasValue)
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Not Assigned Player, RedisString Get Error");
+                return (ErrorCode.AuthTokenNotFound, false);
+            }
+            if (result.Value.State != state.ToString())
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Player State Is Not {state.ToString()}");
+                return (ErrorCode.AuthTokenMismatch, false);
+            }
+            return (ErrorCode.None, true);
+        }
+        catch
+        {
+            s_logger.ZLogError(
+                   $"ID:{accountid}, ErrorMessage: Redis Connection Error");
+            return (ErrorCode.RedisDbConnectionFail, false);
+        }
+    }
+
+    public async Task<ErrorCode> ChangePlayerState(string accountId, PlayerState state)
+    {
+        try
+        {
+            var redis = new RedisString<AuthPlayer>(_redisConn, accountId, null);
+            var getResult = await redis.GetAsync();
+            if (!getResult.HasValue)
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountId}, ErrorMessage: Not Assigned Player, RedisString Get Error");
+                return ErrorCode.AuthTokenNotFound;
+            }
+            var updateValue = getResult.Value;
+
+            updateValue.State = state.ToString(); 
+            var setResult = await redis.SetAsync( updateValue );
+            if (setResult == false)
+            {
+                s_logger.ZLogError(
+                   $"ID:{accountId}, ErrorMessage: Player State Update Error");
+                return ErrorCode.RedisDbConnectionFail;
+            }
+
+            return ErrorCode.None;
+        }
+        catch(Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                   $"ID:{accountId}, ErrorMessage: Redis Connection Error");
+            return ErrorCode.RedisDbConnectionFail;
+        }
+    }
+
     // 공지
     public async Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey)
     {
@@ -146,7 +212,6 @@ public class RedisDb : IRedisDb
                 {
                     title = item.Key,
                     Content = item.Value
-                    
                 });
             }
 
@@ -189,8 +254,7 @@ public class RedisDb : IRedisDb
         {
             var redis = new RedisString<AuthPlayer>(_redisConn, key, NxKeyTimeSpan());
             if (await redis.SetAsync(new AuthPlayer
-            {
-            }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
+            {}, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
             {
                 return false;
             }
@@ -226,7 +290,8 @@ public class RedisDb : IRedisDb
     {
         try
         { 
-            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode), null);
+            var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode)
+                , RediskeyExpireTime.InStageDataExpireMin);
             InStageItem insertData = new InStageItem() { 
                 ItemCode = ItemCode,
                 ItemCount = ItemCount,
@@ -330,9 +395,8 @@ public class RedisDb : IRedisDb
 
             if (redisResult == false)
             {
-                s_logger.ZLogError(
-                 $"ErrorMessage: Delete Farming Item List Error");
-                return ErrorCode.DeleteFarmingItemListFail;
+                s_logger.ZLogInformationWithPayload(new {UID = uid},
+                 $"ErrorMessage: Farming Item List Already Empty");
             }
             return ErrorCode.None;
 
@@ -445,14 +509,13 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisList<int>(_redisConn, $"{KilledNPCKey}{stageCode}_{uid}", null);
+            var redis = new RedisList<int>(_redisConn, MakeKilledNpcKey(uid, stageCode), null);
             var redisResult = await redis.DeleteAsync();
 
             if (redisResult == false)
             {
-                s_logger.ZLogError(
-                 $"ErrorMessage: Delete Killed NPC List Error");
-                return ErrorCode.DeleteKilledNPCListFail;
+                s_logger.ZLogInformationWithPayload(new { UID = uid },
+                 $"ErrorMessage: Killed Npc List Already Empty");
             }
             return ErrorCode.None;
 
@@ -460,11 +523,26 @@ public class RedisDb : IRedisDb
         catch (Exception ex)
         {
             s_logger.ZLogError(ex,
-                  $"ErrorMessage: Farming Item Error");
+                  $"ErrorMessage: Delete Killed NPC List Error");
             return ErrorCode.DeleteKilledNPCListFail;
         }
     }
 
+    public async Task<ErrorCode> InitInStageData(Int32 uid, Int32 stageCode)
+    {
+        var errorCode = await DeleteFarmingItemList(uid, stageCode);
+        if (errorCode != ErrorCode.None)
+        {
+            return errorCode;
+        }
+
+        errorCode = await DeleteKilledNPCList(uid, stageCode);
+        if (errorCode != ErrorCode.None)
+        {
+            return errorCode;
+        }
+        return ErrorCode.None;
+    }
 
     public TimeSpan NxKeyTimeSpan()
     {
@@ -478,4 +556,6 @@ public class RediskeyExpireTime
     public const ushort RegistKeyExpireSecond = 6000;
     public const ushort LoginKeyExpireMin = 60;
     public const ushort TicketKeyExpireSecond = 6000;
+
+    public const ushort InStageDataExpireHour = 1;
 }

@@ -66,4 +66,8 @@ public interface IGameDb : IDisposable
     public Task<(ErrorCode, List<PlayerItemForClient>)> EarnItemAfterStageClear(Int32 uid, List<InStageItem> earnItemList);
 
     public Task<(ErrorCode, Int32)> EarnExpAfterClearStage(Int32 uid, Int32 stageCode, List<InStageNpc> killedNpcs);
+
+    public Task<ErrorCode> UpdateLastClearStage(Int32 uid, Int32 stageCode);
+
+    public Task<ErrorCode> UpdatePlayerEXP(Int32 uid, Int32 exp);
 }

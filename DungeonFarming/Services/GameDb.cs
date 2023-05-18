@@ -71,6 +71,25 @@ public class GameDb : IGameDb
         _MasterData = masterData;
     }
 
+    private void GameDBOpen()
+    {
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+
+        _dbConn.Open();
+    }
+
+    private void GameDBClose()
+    {
+        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+
+        _dbConn.Close();
+    }
+
+    public void Dispose()
+    {
+        GameDBClose();
+    }
+
     private PlayerInfo MakeBasicPlayer(string accountID)
     {
         PlayerInfo basicPlayer = new PlayerInfo
@@ -954,8 +973,12 @@ public class GameDb : IGameDb
                 earnExp += npcExp * npcInfo.NpcCount;
             }
 
-            var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid).
-                IncrementAsync("EXP", earnExp);
+            var updateResult = await UpdatePlayerEXP(uid, earnExp);
+
+            if (updateResult != ErrorCode.None)
+            {
+                return (updateResult, 0);
+            }
 
             return (ErrorCode.None, earnExp);
         }
@@ -967,24 +990,53 @@ public class GameDb : IGameDb
         }
     }
 
-
-    private void GameDBOpen()
+    public async Task<ErrorCode> UpdateLastClearStage(Int32 uid, Int32 stageCode)
     {
-        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+        try
+        {
+            var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                .UpdateAsync(new { LastClearStage = stageCode });
 
-        _dbConn.Open();
+            if (updateResult == 0)
+            {
+                _logger.ZLogError(
+                   $"ErrorMessage: Update Player Last Clear Stage Error");
+                return ErrorCode.UpdateLastClearStageFail;
+            }
+
+            return ErrorCode.None; 
+        }
+        catch (Exception ex) {
+
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Update Player Last Clear Stage Error");
+            return ErrorCode.UpdateLastClearStageFail;
+        }
     }
 
-    private void GameDBClose()
+    public async Task<ErrorCode> UpdatePlayerEXP(Int32 uid, Int32 exp)
     {
-        _dbConn = new MySqlConnection(_dbConfig.Value.GameDb);
+        try
+        {
+            var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid).
+                IncrementAsync("EXP", exp);
 
-        _dbConn.Close();
-    }
+            if (updateResult == 0)
+            {
+                _logger.ZLogError(
+                   $"ErrorMessage: Update Player Exp Error");
+                return ErrorCode.UpdatePlayerExpFail;
+            }
 
-    public void Dispose()
-    {
-        GameDBClose();
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Update Player Exp Error");
+            return ErrorCode.UpdatePlayerExpFail;
+        }
     }
 }
 

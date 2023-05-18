@@ -17,6 +17,10 @@ public interface IRedisDb
 
     public Task<(ErrorCode, bool)> CheckPlayerAuthAsync(string accountid, string playerAuthToken);
 
+    public Task<(ErrorCode, bool)> CheckPlayerState(string accountid, PlayerState state);
+
+    public Task<ErrorCode> ChangePlayerState(string accountId, PlayerState state);
+
     public Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey);
 
     public Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content);
@@ -40,4 +44,6 @@ public interface IRedisDb
     public Task<ErrorCode> DeleteFarmingItemList(Int32 uid, Int32 stageCode);
 
     public Task<ErrorCode> DeleteKilledNPCList(Int32 uid, Int32 stageCode);
+
+    public Task<ErrorCode> InitInStageData(Int32 uid, Int32 stageCode);
 }

@@ -45,10 +45,12 @@ public enum ErrorCode : UInt16
     ItemEnhanceError = 3012,
     ItemEnhanceDisable = 3013,
     DeleteItemFail = 3014,
+    UpdateLastClearStageFail = 3015,
 
     PlayerStatusChangeFail = 3020,
     PlayerIsExistGame = 3021,
     GetPlayerListFail = 3022,
+    UpdatePlayerExpFail = 3023,
 
     InsertPlayerItemFail = 3030,
     PlayerLoginFail = 3031,
@@ -82,5 +84,7 @@ public enum ErrorCode : UInt16
     DeleteKilledNPCListFail = 6009,
     PlayerClearStageDisable = 6010,
     EarnStageClearItemRewordsFail = 6011,
-    EarnStageClearExpRewordsFail = 6012
+    EarnStageClearExpRewordsFail = 6012,
+    FarmingItemListAlreadyEmpty = 6013,
+    KilledNPCListAlreadyEmpty = 6014
 }

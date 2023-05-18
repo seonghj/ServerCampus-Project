@@ -10,6 +10,7 @@ public enum PlayerState
 {
     Default = 0,
     Login = 1,
+    InStage = 2
 }
 
 // 공지
