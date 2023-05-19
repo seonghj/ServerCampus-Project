@@ -35,7 +35,7 @@ public interface IRedisDb
 
     public Task<InStageItem> GetFarmingItem(Int32 uid, Int32 itemCode, Int32 stageCode);
 
-    public Task<List<InStageItem>> GetFarmingItemListAll(Int32 uid, Int32 stageCode);
+    public Task<List<InStageItem>> GetFarmingItemList(Int32 uid, Int32 stageCode);
 
     public Task<InStageNpc> GetKilledNPC(Int32 uid, Int32 NpcCode, Int32 stageCode);
 

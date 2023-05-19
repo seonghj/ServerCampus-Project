@@ -16,6 +16,7 @@ using SqlKata;
 using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.AspNetCore.Http;
 
 namespace DungeonFarming.Services;
 
@@ -29,28 +30,13 @@ public class GameDb : IGameDb
     SqlKata.Compilers.MySqlCompiler _compiler;
     QueryFactory _queryFactory;
 
-    string[] playerItemCols = new[] { "UID", "ItemCode", "ItemName"
-                , "Attack", "Defence", "Magic", "EnhanceCount", "ItemCount"};
     string[] MailCols = new[] { "UID", "Title", "ExpirationDate","IsReceive", "CreatedAt", "ItemCode", "ItemCount"};
 
-
     Int32 INF = -987654321;
-    Int32 GoldAttributeCode = 5;
-    Int32 WeaponAttributeCode = 1;
-    Int32 ArmorAttributeCode = 2;
-    Int32 PotionAttributeCode = 4;
+    
     Int32 basicWeaponCode = 2;
 
-    Int32 basicLevel = 1;
-    Int32 basicExp = 0;
-    Int32 basicHp = 100;
-    Int32 basicMp = 100;
-    Int32 basicGold = 0;
-
     Int32 mailPageSize = 20;
-    string ProductsMailTitle = "구매 상품";
-    string AttendanceMailTitle = "출석 보상";
-    string StageClearRewordsMailTitle = "스테이지 클리어 보상";
 
     DateTime mailExpireDate = DateTime.Now.AddDays(30).Date;
     DateTime productsMailExpireDate = DateTime.Now.AddYears(1).Date;
@@ -92,14 +78,15 @@ public class GameDb : IGameDb
 
     private PlayerInfo MakeBasicPlayer(string accountID)
     {
+
         PlayerInfo basicPlayer = new PlayerInfo
         {
             AccountID = accountID,
-            Level = basicLevel,
-            Exp = basicExp,
-            Hp = basicHp,
-            Mp = basicMp,
-            Gold = basicGold,
+            Level = BasicPlayerStatus.Level,
+            Exp = BasicPlayerStatus.Exp,
+            Hp = BasicPlayerStatus.Hp,
+            Mp = BasicPlayerStatus.Mp,
+            Gold = BasicPlayerStatus.Gold,
             LastLoginTime = DateTime.Now.Date,
             ConsecutiveLoginDays = 0,
             LastClearStage = 0
@@ -119,7 +106,7 @@ public class GameDb : IGameDb
             Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
             EnhanceCount = 0,
             ItemCount = 1,
-            CreateAt = DateTime.Now
+            CreatedAt = DateTime.Now
         };
 
         return basicItem;
@@ -137,7 +124,7 @@ public class GameDb : IGameDb
             Magic = masterItemData.Magic,
             EnhanceCount = 0,
             ItemCount = itemCount,
-            CreateAt = DateTime.Now
+            CreatedAt = DateTime.Now
         };
 
         return Item;
@@ -153,7 +140,7 @@ public class GameDb : IGameDb
             EnhanceCount = item.EnhanceCount,
             Magic = item.Magic,
             ItemCount = item.ItemCount,
-            CreateAt = item.CreateAt
+            CreatedAt = item.CreatedAt
         };
 
         return iteminfo;
@@ -170,7 +157,7 @@ public class GameDb : IGameDb
             EnhanceCount = 0,
             Magic = masterItemData.Magic,
             ItemCount = itemCount,
-            CreateAt = DateTime.Now
+            CreatedAt = DateTime.Now
         };
 
         return iteminfo;
@@ -384,7 +371,7 @@ public class GameDb : IGameDb
             if (_MasterData.ItemDict[itemCode].CanOverlap == true)
             {
 
-                if (_MasterData.ItemDict[itemCode].Attribute == GoldAttributeCode)
+                if (_MasterData.ItemDict[itemCode].Attribute == ItemAttribute.Gold)
                 {
                     PlayerGoldBeforeUpdate = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                     .Select("Gold").FirstAsync<int>();
@@ -407,7 +394,8 @@ public class GameDb : IGameDb
                 }
             }
 
-            var insertItemToPlayer = _queryFactory.Query("PlayerItem").InsertAsync(insertData);
+            var insertItemToPlayer = await _queryFactory.Query("PlayerItem").InsertAsync(insertData);
+
             return (ErrorCode.None, MakePlayerItemForClient(insertData));
         }
         catch(Exception ex) 
@@ -502,6 +490,23 @@ public class GameDb : IGameDb
             _logger.ZLogError(
                    $"ErrorMessage: Get Mail Error");
             return (ErrorCode.GetMailFail, null);
+        }
+    }
+
+    public async Task<(ErrorCode, Int32)> GetPlayerAttendenceDays(Int32 uid)
+    {
+        try
+        {
+            var result = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
+                .Select("ConsecutiveLoginDays").FirstOrDefaultAsync<Int32>();
+
+            return (ErrorCode.None, result);
+        }
+        catch(Exception ex)
+        {
+            _logger.ZLogError(ex, 
+                       $"ErrorMessage: Get Player Attendence Days Error");
+            return (ErrorCode.GetPlayerAttendenceDaysFail, 0);
         }
     }
 
@@ -626,12 +631,11 @@ public class GameDb : IGameDb
             Attendance rewords = _MasterData.AttendanceDict[NextAttendenceDay];
 
             DateTime CreateMailTime = DateTime.Now;
-            DateTime ExpirationDate = DateTime.Now.AddDays(30).Date;
 
             ItemCodeAndCount item = new ItemCodeAndCount { ItemCode = rewords.ItemCode, ItemCount = rewords.Count };
 
             var insertResult = await InsertItemToMail(uid, item
-            , AttendanceMailTitle, mailExpireDate);
+            , MailTitle.AttendanceRewords, mailExpireDate);
            
             if (insertResult == 0)
             {
@@ -671,7 +675,7 @@ public class GameDb : IGameDb
         DateTime expirationTime = productsMailExpireDate;
         var itemList = new List<ItemCodeAndCount>(_MasterData.InAppProductDict[productCode].Item);
         var insertList = itemList.Select(item => new object[]
-                {uid,  $"{ProductsMailTitle}_{productCode}",expirationTime
+                {uid,  MailTitle.Products, expirationTime
                 ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
         try
         {
@@ -706,41 +710,103 @@ public class GameDb : IGameDb
         }
     }
 
-    // 강화
-    public async Task<(ErrorCode, PlayerItem, bool)> EnhanceItem(Int32 uid, Int32 itemUID)
+    public async Task<(ErrorCode, PlayerItemForClient)> EnhanceWeapon(PlayerItem weapon)
+    {
+        try
+        {
+            Int32 newEnhanceCount = weapon.EnhanceCount + 1;
+            var newAttack = (int)Math.Ceiling(weapon.Attack * EnhanceWeight);
+            var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", weapon.ItemUniqueID)
+                .UpdateAsync(new
+                { Attack = newAttack, EnhanceCount = weapon.EnhanceCount + 1 });
+
+            PlayerItemForClient enhancedWeapon = new PlayerItemForClient
+            {
+                ItemCode = weapon.ItemCode,
+                Attack = newAttack,
+                Defence = weapon.Defence,
+                Magic = weapon.Magic,
+                EnhanceCount = newEnhanceCount,
+                ItemCount = weapon.ItemCount,
+                CreatedAt = weapon.CreatedAt,
+            };
+
+            return (ErrorCode.None, enhancedWeapon);
+        }
+        catch(Exception ex)
+        {
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Weapon Enhance Disable");
+            return (ErrorCode.ItemEnhanceDisable, null);
+        }
+    }
+
+    public async Task<(ErrorCode, PlayerItemForClient)> EnhanceArmor(PlayerItem armor)
+    {
+        try
+        {
+            Int32 newEnhanceCount = armor.EnhanceCount + 1;
+            var newDefence = (int)Math.Ceiling(armor.Defence * EnhanceWeight);
+            var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", armor.ItemUniqueID)
+                .UpdateAsync(new
+                { Defence = newDefence, EnhanceCount = armor.EnhanceCount + 1 });
+
+            PlayerItemForClient enhancedArmor = new PlayerItemForClient
+            {
+                ItemCode = armor.ItemCode,
+                Attack = newDefence,
+                Defence = armor.Defence,
+                Magic = armor.Magic,
+                EnhanceCount = newEnhanceCount,
+                ItemCount = armor.ItemCount,
+                CreatedAt = armor.CreatedAt,
+            };
+
+            return (ErrorCode.None, enhancedArmor);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex,
+                   $"ErrorMessage: Armor Enhance Disable");
+            return (ErrorCode.ItemEnhanceDisable, null);
+        }
+    }
+
+    public async Task<(ErrorCode, PlayerItemForClient, bool)> EnhanceItem(Int32 uid, Int32 itemUID)
     {
         try
         {
             var itemInfo = await _queryFactory.Query("playerItem").Where("UID", uid)
                 .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
 
-            var itemMasterData = _MasterData.ItemDict[itemInfo.ItemCode];
+            var enhanceMaxCount = _MasterData.ItemDict[itemInfo.ItemCode].EnhanceMaxCount;
+            var itemAttribute = _MasterData.ItemDict[itemInfo.ItemCode].Attribute;
             var enhanceResult = false;
-            if (itemInfo.EnhanceCount < itemMasterData.EnhanceMaxCount)
-            {
-                Int32 newEnhanceCount = itemInfo.EnhanceCount + 1;
+
+            PlayerItemForClient enhancedItem = null;
+
+            if (itemInfo.EnhanceCount < enhanceMaxCount)
+            { 
                 Random random = new Random();
                 if (random.Next(100) < EnhanceItemPercentage)
                 {
-                    if (itemMasterData.Attribute == WeaponAttributeCode)
+                    if (itemAttribute == ItemAttribute.Weapon)
                     {
-                        var newAttack = (int)Math.Ceiling(itemInfo.Attack * EnhanceWeight);
-                        var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
-                            .UpdateAsync(new
-                                { Attack =  newAttack, EnhanceCount = newEnhanceCount});
+                        (var errorCode, enhancedItem) = await EnhanceWeapon(itemInfo);
 
-                        itemInfo.Attack = newAttack;
-                        itemInfo.EnhanceCount = newEnhanceCount;
+                        if (errorCode != ErrorCode.None)
+                        {
+                            return (errorCode, null, false);
+                        }
                     }
-                    else if (itemMasterData.Attribute == ArmorAttributeCode)
+                    else if (itemAttribute == ItemAttribute.Armor)
                     {
-                        var newDefence = (int)Math.Ceiling(itemInfo.Defence * EnhanceWeight);
-                        var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", itemUID)
-                            .UpdateAsync(new
-                            { Defence = newDefence, EnhanceCount = newEnhanceCount });
+                        (var errorCode, enhancedItem) = await EnhanceArmor(itemInfo);
 
-                        itemInfo.Defence = newDefence;
-                        itemInfo.EnhanceCount = newEnhanceCount;
+                        if (errorCode != ErrorCode.None)
+                        {
+                            return (errorCode, null, false);
+                        }
                     }
 
                     _logger.ZLogInformationWithPayload(new { ItemUniqueID = itemUID },
@@ -757,7 +823,7 @@ public class GameDb : IGameDb
 
                     enhanceResult = false;
                 }
-                return (ErrorCode.None, itemInfo, enhanceResult);
+                return (ErrorCode.None, enhancedItem, enhanceResult);
             }
             else
             {
@@ -938,7 +1004,7 @@ public class GameDb : IGameDb
 
 
             var insertList = itemList.Select(item => new object[]
-                {uid,  StageClearRewordsMailTitle ,mailExpireDate
+                {uid,  MailTitle.StageClearRewords ,mailExpireDate
                 ,false, DateTime.Now.Date, item.ItemCode, item.ItemCount}).ToArray();
 
             var insertErrorCode = await InsertItemToMail(uid, insertList);
@@ -957,7 +1023,7 @@ public class GameDb : IGameDb
             {
                 foreach(var item in itemList)
                 {
-                    await DeletePlayerItem(uid, item.ItemCode, item.CreateAt);
+                    await DeletePlayerItem(uid, item.ItemCode, item.CreatedAt);
                 }
             }
 
@@ -1045,3 +1111,27 @@ public class GameDb : IGameDb
     }
 }
 
+public class BasicPlayerStatus
+{
+    public const Int32 Level = 1;
+    public const Int32 Exp = 0;
+    public const Int32 Hp = 100;
+    public const Int32 Mp = 100;
+    public const Int32 Gold = 0;
+}
+
+public class ItemAttribute
+{
+    public const Int32 Weapon = 1;
+    public const Int32 Armor = 2;
+    public const Int32 Costume = 3;
+    public const Int32 Potion = 4;
+    public const Int32 Gold = 5;
+}
+
+public class MailTitle
+{
+    public const string Products = "구매 상품";
+    public const string AttendanceRewords = "출석 보상";
+    public const string StageClearRewords = "스테이지 클리어 보상";
+}

@@ -43,7 +43,11 @@ public interface IGameDb : IDisposable
 
     public Task<ErrorCode> InAppProductSentToMail(Int32 uid, Int32 productCode, string receiptCode);
 
-    public Task<(ErrorCode, PlayerItem, bool)> EnhanceItem(Int32 uid, Int32 itemUID);
+    public Task<(ErrorCode, PlayerItemForClient)> EnhanceWeapon(PlayerItem weapon);
+
+    public Task<(ErrorCode, PlayerItemForClient)> EnhanceArmor(PlayerItem armor);
+    
+    public Task<(ErrorCode, PlayerItemForClient, bool)> EnhanceItem(Int32 uid, Int32 itemUID);
 
     public Task<(ErrorCode, bool)> CheckAbleStartStage(Int32 uid, Int32 stageCode);
 

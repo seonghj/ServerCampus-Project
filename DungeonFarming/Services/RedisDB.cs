@@ -356,7 +356,7 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<List<InStageItem>> GetFarmingItemListAll(Int32 uid, Int32 stageCode)
+    public async Task<List<InStageItem>> GetFarmingItemList(Int32 uid, Int32 stageCode)
     {
         try
         {

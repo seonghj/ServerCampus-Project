@@ -46,6 +46,7 @@ public enum ErrorCode : UInt16
     ItemEnhanceDisable = 3013,
     DeleteItemFail = 3014,
     UpdateLastClearStageFail = 3015,
+    GetPlayerAttendenceDaysFail = 3016,
 
     PlayerStatusChangeFail = 3020,
     PlayerIsExistGame = 3021,

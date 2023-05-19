@@ -52,7 +52,7 @@ public class StageClear : ControllerBase
             return response;
         }
 
-        List<InStageItem> itemList = await _redisDb.GetFarmingItemListAll(uid, stageCode);
+        List<InStageItem> itemList = await _redisDb.GetFarmingItemList(uid, stageCode);
 
         (errorCode, response.EarnItemList) = await _gameDb.EarnItemAfterStageClear(uid, itemList);
         if (errorCode != ErrorCode.None)
