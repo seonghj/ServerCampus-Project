@@ -29,6 +29,8 @@ public interface IGameDb : IDisposable
 
     public Task<(ErrorCode, List<Mail>)> GetMailAsync(Int32 uid, Int32 page);
 
+    public Task<(ErrorCode, Int32)> GetPlayerAttendenceDays(Int32 uid);
+
     public Task<(ErrorCode, PlayerItemForClient)> InsertPlayerItem(Int32 uid, Int32 itemCode, Int32 itemCount);
 
     public Task<(ErrorCode, PlayerItemForClient)> ReceiveItemFromMail(Int32 uid, Int32 mailcode);
