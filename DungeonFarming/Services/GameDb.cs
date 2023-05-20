@@ -13,10 +13,6 @@ using MySqlConnector;
 using SqlKata.Execution;
 using ZLogger;
 using SqlKata;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.AspNetCore.Http;
 
 namespace DungeonFarming.Services;
 
@@ -40,9 +36,6 @@ public class GameDb : IGameDb
 
     DateTime mailExpireDate = DateTime.Now.AddDays(30).Date;
     DateTime productsMailExpireDate = DateTime.Now.AddYears(1).Date;
-
-    Int32 EnhanceItemPercentage = 30;
-    double EnhanceWeight = 1.1;
 
     public GameDb(ILogger<GameDb> logger, IOptions<DbConfig> dbConfig
         , IMasterData masterData)
@@ -1134,4 +1127,10 @@ public class MailTitle
     public const string Products = "구매 상품";
     public const string AttendanceRewords = "출석 보상";
     public const string StageClearRewords = "스테이지 클리어 보상";
+}
+
+public class ItemEnhanceSetting
+{
+    public const Int32 SuccessPercentage = 30;
+    public const double Weight = 1.1;
 }

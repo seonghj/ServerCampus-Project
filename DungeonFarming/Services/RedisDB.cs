@@ -49,7 +49,6 @@ public class RedisDb : IRedisDb
         return TimeSpan.FromHours(RediskeyExpireTime.InStageDataExpireHour);
     }
 
-    // 인증키
     public async Task<ErrorCode> InsertPlayerAuthAsync(string accountid)
     {
         var AuthKey = Service.Security.CreatePlayerAuth(accountid);
@@ -191,7 +190,6 @@ public class RedisDb : IRedisDb
         }
     }
 
-    // 공지
     public async Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey)
     {
 
