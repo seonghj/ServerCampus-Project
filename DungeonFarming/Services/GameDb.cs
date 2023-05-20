@@ -659,9 +659,6 @@ public class GameDb : IGameDb
         }
     }
 
-
-    // 인앱 구매
-
     public async Task<ErrorCode> InAppProductSentToMail(Int32 uid, Int32 productCode, string receiptCode)
     {
         DateTime CreateMailTime = DateTime.Now;
@@ -708,7 +705,7 @@ public class GameDb : IGameDb
         try
         {
             Int32 newEnhanceCount = weapon.EnhanceCount + 1;
-            var newAttack = (int)Math.Ceiling(weapon.Attack * EnhanceWeight);
+            var newAttack = (int)Math.Ceiling(weapon.Attack * ItemEnhanceSetting.IncreaseValue);
             var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", weapon.ItemUniqueID)
                 .UpdateAsync(new
                 { Attack = newAttack, EnhanceCount = weapon.EnhanceCount + 1 });
@@ -739,7 +736,7 @@ public class GameDb : IGameDb
         try
         {
             Int32 newEnhanceCount = armor.EnhanceCount + 1;
-            var newDefence = (int)Math.Ceiling(armor.Defence * EnhanceWeight);
+            var newDefence = (int)Math.Ceiling(armor.Defence * ItemEnhanceSetting.IncreaseValue);
             var updateResult = await _queryFactory.Query("PlayerItem").Where("ItemUniqueID", armor.ItemUniqueID)
                 .UpdateAsync(new
                 { Defence = newDefence, EnhanceCount = armor.EnhanceCount + 1 });
@@ -781,7 +778,7 @@ public class GameDb : IGameDb
             if (itemInfo.EnhanceCount < enhanceMaxCount)
             { 
                 Random random = new Random();
-                if (random.Next(100) < EnhanceItemPercentage)
+                if (random.Next(100) < ItemEnhanceSetting.SuccessPercentage)
                 {
                     if (itemAttribute == ItemAttribute.Weapon)
                     {
@@ -1132,5 +1129,5 @@ public class MailTitle
 public class ItemEnhanceSetting
 {
     public const Int32 SuccessPercentage = 30;
-    public const double Weight = 1.1;
+    public const double IncreaseValue = 1.1;
 }
