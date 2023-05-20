@@ -23,16 +23,16 @@ public class MasterData:IMasterData
     SqlKata.Compilers.MySqlCompiler _compiler;
     QueryFactory _queryFactory;
 
-    public Dictionary<Int32, Item> ItemDict { get; set; }
-    public Dictionary<Int32, ItemAttribute> ItemAttributeDict { get; set; }
+    private Dictionary<Int32, Item> ItemDict { get; set; }
+    private Dictionary<Int32, ItemAttribute> ItemAttributeDict { get; set; }
 
-    public Dictionary<Int32, InAppProduct> InAppProductDict { get; set; }
+    private Dictionary<Int32, InAppProduct> InAppProductDict { get; set; }
 
-    public Dictionary<Int32, Attendance> AttendanceDict { get; set; }
+    private Dictionary<Int32, Attendance> AttendanceDict { get; set; }
 
-    public Dictionary<Int32, StageItem> StageItemDict { get; set; }
+    private Dictionary<Int32, StageItem> StageItemDict { get; set; }
 
-    public Dictionary<Int32, StageNPC> StageNPCDict { get; set; }
+    private Dictionary<Int32, StageNPC> StageNPCDict { get; set; }
 
     public MasterData(ILogger<MasterData> logger, IOptions<DbConfig> dbConfig)
     {
@@ -44,16 +44,13 @@ public class MasterData:IMasterData
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, _compiler);
 
-        getMasterData();
+        InitMasterData();
     }
 
-    public async Task<ErrorCode> getMasterData_Item()
+    public async Task<ErrorCode> InitMasterData_Item()
     {
         try
-        {
-            _logger.ZLogDebug(
-                $"[Receive ItemData From MasterData]");
-
+        { 
             var result = await _queryFactory.Query("MasterData_Item").GetAsync<Item>();
 
             ItemDict = new Dictionary<Int32, Item>();
@@ -65,18 +62,15 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive ItemData From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive ItemData From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
     }
 
-    public async Task<ErrorCode> getMasterData_ItemAttribute()
+    public async Task<ErrorCode> InitMasterData_ItemAttribute()
     {
         try
         {
-            _logger.ZLogDebug(
-                $"[Receive ItemAttribute From MasterData]");
-
             var result = await _queryFactory.Query("MasterData_ItemAttribute").GetAsync<ItemAttribute>();
 
             ItemAttributeDict = new Dictionary<Int32, ItemAttribute>();
@@ -88,18 +82,15 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive ItemData From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive ItemData From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
     }
 
-    public async Task<ErrorCode> getMasterData_Attendance()
+    public async Task<ErrorCode> InitMasterData_Attendance()
     {
         try
-        {
-            _logger.ZLogDebug(
-                $"[Receive Attendance From MasterData]");
-
+        { 
             var result = await _queryFactory.Query("MasterData_Attendance").GetAsync<Attendance>();
 
             AttendanceDict = new Dictionary<Int32, Attendance>();
@@ -111,18 +102,15 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive Attendance From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive Attendance From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
     }
 
-    public async Task<ErrorCode> getMasterData_InAppProduct()
+    public async Task<ErrorCode> InitMasterData_InAppProduct()
     {
         try
         {
-            _logger.ZLogDebug(
-                $"[Receive InAppProduct From MasterData]");
-
             var result = await _queryFactory.Query("masterdata_inappproduct").GetAsync<InAppProductGetter>();
 
             InAppProductDict = new Dictionary<Int32, InAppProduct>();
@@ -143,18 +131,15 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive InAppProduct From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive InAppProduct From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
     }
 
-    public async Task<ErrorCode> getMasterData_StageItem()
+    public async Task<ErrorCode> InitMasterData_StageItem()
     {
         try
         {
-            _logger.ZLogDebug(
-                $"[Receive StageItem From MasterData]");
-
             var result = await _queryFactory.Query("MasterData_StageItem").GetAsync<StageItemGetter>();
 
             StageItemDict = new Dictionary<Int32, StageItem>();
@@ -185,19 +170,16 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive StageItem From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive StageItem From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
 
     }
 
-    public async Task<ErrorCode> getMasterData_StageNPC()
+    public async Task<ErrorCode> InitMasterData_StageNPC()
     {
         try
         {
-            _logger.ZLogDebug(
-                $"[Receive StageNPC From MasterData]");
-
             var result = await _queryFactory.Query("MasterData_StageNPC").GetAsync<StageNPCGetter>();
 
             StageNPCDict = new Dictionary<Int32, StageNPC>();
@@ -232,126 +214,56 @@ public class MasterData:IMasterData
         catch (Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive StageNPC From MasterData] ErrorCode: {ErrorCode.None}");
-            return ErrorCode.CreateAccountFailException;
+                $"[Receive StageNPC From MasterData] ErrorCode: {ErrorCode.GetMasterDataError}");
+            return ErrorCode.GetMasterDataError;
         }
     }
 
-    public async Task<ErrorCode> getMasterData()
+    public async Task<ErrorCode> InitMasterData()
     {
+
         try
         {
-            _logger.ZLogDebug(
-                $"[Receive ItemData From MasterData]");
-
-            var result1 = await _queryFactory.Query("MasterData_Item").GetAsync<Item>();
-
-            ItemDict = new Dictionary<Int32, Item>();
-
-            foreach (var it in result1.ToList()) { ItemDict.Add(it.Code, it); }
-
-            _logger.ZLogDebug(
-                $"[Receive ItemAttribute From MasterData]");
-
-            var result2 = await _queryFactory.Query("MasterData_ItemAttribute").GetAsync<ItemAttribute>();
-
-            ItemAttributeDict = new Dictionary<Int32, ItemAttribute>();
-
-            foreach (var it in result2.ToList()) { ItemAttributeDict.Add(it.Code, it); }
-
-            _logger.ZLogDebug(
-                $"[Receive Attendance From MasterData]");
-
-            var result3 = await _queryFactory.Query("MasterData_Attendance").GetAsync<Attendance>();
-
-            AttendanceDict = new Dictionary<Int32, Attendance>();
-
-            foreach (var it in result3.ToList()) { AttendanceDict.Add(it.Code, it); }
-
-            _logger.ZLogDebug(
-                $"[Receive InAppProduct From MasterData]");
-
-            var result4 = await _queryFactory.Query("masterdata_inappproduct").GetAsync<InAppProductGetter>();
-
-            InAppProductDict = new Dictionary<Int32, InAppProduct>();
-
-            foreach (var it in result4.ToList())
+            var errorCode = await InitMasterData_Item();
+            if (errorCode != ErrorCode.None)
             {
-                List<ItemCodeAndCount> list = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(it.Item);
-
-                InAppProductDict.Add(it.Code, new InAppProduct
-                {
-                    Code = it.Code,
-                    Item = list
-                });
+                return errorCode;
+            }
+            errorCode = await InitMasterData_ItemAttribute();
+            if (errorCode != ErrorCode.None)
+            {
+                return errorCode;
             }
 
-            _logger.ZLogDebug(
-                $"[Receive StageItem From MasterData]");
-
-            var result5 = await _queryFactory.Query("MasterData_StageItem").GetAsync<StageItemGetter>();
-
-            StageItemDict = new Dictionary<Int32, StageItem>();
-
-            foreach (var stageitems in result5.ToList())
+            errorCode = await InitMasterData_Attendance();
+            if (errorCode != ErrorCode.None)
             {
-                List<ItemCodeAndCount> list = JsonSerializer.Deserialize<List<ItemCodeAndCount>>(stageitems.Item);
-
-                List<Int32> itemList = new List<Int32>();
-                Dictionary<Int32, Int32> itemCount = new Dictionary<Int32, Int32>();
-                foreach (var it in list)
-                {
-                    itemList.Add(it.ItemCode);
-                    itemCount.Add(it.ItemCode, it.ItemCount);
-                }
-
-                StageItemDict.Add(stageitems.Code, new StageItem
-                {
-                    Code = stageitems.Code,
-                    ItemInfoList = list,
-                    ItemCode = itemList,
-                    ItemCount = itemCount
-                });
+                return errorCode;
             }
 
-            _logger.ZLogDebug(
-                $"[Receive StageNPC From MasterData]");
-
-            var result6 = await _queryFactory.Query("MasterData_StageNPC").GetAsync<StageNPCGetter>();
-
-            StageNPCDict = new Dictionary<Int32, StageNPC>();
-
-            foreach (var stageNPCs in result6.ToList())
+            errorCode = await InitMasterData_InAppProduct();
+            if (errorCode != ErrorCode.None)
             {
-                List<NPCInfo> list = JsonSerializer.Deserialize<List<NPCInfo>>(stageNPCs.NPCinfo);
-
-                List<Int32> npcList = new List<Int32>();
-                Dictionary<Int32, Int32> npcCount = new Dictionary<Int32, Int32>();
-                Dictionary<Int32, Int32> npcExp = new Dictionary<Int32, Int32>();
-
-                foreach (var npc in list)
-                {
-                    npcList.Add(npc.NPCCode);
-                    npcCount.Add(npc.NPCCode, npc.Count);
-                    npcExp.Add(npc.NPCCode, npc.Exp);
-                }
-
-                StageNPCDict.Add(stageNPCs.Code, new StageNPC
-                {
-                    Code = stageNPCs.Code,
-                    NPCInfoList = list,
-                    NPCList = npcList,
-                    NPCCount = npcCount,
-                    NPCExp = npcExp
-                });
+                return errorCode;
             }
 
+            errorCode = await InitMasterData_StageItem();
+            if (errorCode != ErrorCode.None)
+            {
+                return errorCode;
+            }
+
+            errorCode = await InitMasterData_StageNPC();
+            if (errorCode != ErrorCode.None)
+            {
+                return errorCode;
+            }
             return ErrorCode.None;
         }
-        catch (Exception e)
+        catch(Exception e)
         {
             _logger.ZLogError(e,
-                $"[Receive MasterData] ErrorCode: {ErrorCode.None}");
+                $"Get MasterData Error");
             return ErrorCode.CreateAccountFailException;
         }
     }

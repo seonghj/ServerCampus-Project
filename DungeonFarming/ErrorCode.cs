@@ -70,6 +70,7 @@ public enum ErrorCode : UInt16
     MailExpirationDateOut = 4016,
     DeleteMailFail = 4017,
     MailIsNotExist = 4018,
+    GetMasterDataError = 4019,
     //Redis 5000-
     RedisDbConnectionFail = 5002,
 

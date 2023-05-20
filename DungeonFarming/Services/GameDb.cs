@@ -93,10 +93,10 @@ public class GameDb : IGameDb
         PlayerItem basicItem = new PlayerItem
         {
             UID = uid,
-            ItemCode = _MasterData.ItemDict[basicWeaponCode].Code,
-            Attack = _MasterData.ItemDict[basicWeaponCode].Attack,
-            Defence = _MasterData.ItemDict[basicWeaponCode].Defence,
-            Magic = _MasterData.ItemDict[basicWeaponCode].Magic,
+            ItemCode = _MasterData.getItemData(basicWeaponCode).Code,
+            Attack = _MasterData.getItemData(basicWeaponCode).Attack,
+            Defence = _MasterData.getItemData(basicWeaponCode).Defence,
+            Magic = _MasterData.getItemData(basicWeaponCode).Magic,
             EnhanceCount = 0,
             ItemCount = 1,
             CreatedAt = DateTime.Now
@@ -107,7 +107,7 @@ public class GameDb : IGameDb
 
     private PlayerItem MakeItem(Int32 uid, Int32 itemCode, Int32 itemCount)
     {
-        Item masterItemData = _MasterData.ItemDict[itemCode];
+        Item masterItemData = _MasterData.getItemData(itemCode);
         PlayerItem Item = new PlayerItem
         {
             UID = uid,
@@ -141,7 +141,7 @@ public class GameDb : IGameDb
 
     private PlayerItemForClient MakePlayerItemForClient(Int32 itemCode, Int32 itemCount)
     {
-        Item masterItemData = _MasterData.ItemDict[itemCode];
+        Item masterItemData = _MasterData.getItemData(itemCode);
         PlayerItemForClient iteminfo = new PlayerItemForClient
         {
             ItemCode = itemCode,
@@ -186,7 +186,7 @@ public class GameDb : IGameDb
 
     private async void DeleteInAppProductsMail(Int32 uid, Int32 productCode, DateTime createTime, DateTime expirationTime)
     {
-        var itemList = _MasterData.InAppProductDict[productCode].Item;
+        var itemList = _MasterData.getInAppProductData(productCode).Item;
 
         foreach (var item in itemList)
         {
@@ -361,10 +361,10 @@ public class GameDb : IGameDb
 
             PlayerItem insertData = MakeItem(uid, itemCode, itemCount);
 
-            if (_MasterData.ItemDict[itemCode].CanOverlap == true)
+            if (_MasterData.getItemData(itemCode).CanOverlap == true)
             {
 
-                if (_MasterData.ItemDict[itemCode].Attribute == ItemAttribute.Gold)
+                if (_MasterData.getItemData(itemCode).Attribute == ItemAttribute.Gold)
                 {
                     PlayerGoldBeforeUpdate = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                     .Select("Gold").FirstAsync<int>();
@@ -621,7 +621,7 @@ public class GameDb : IGameDb
                 }
             }
 
-            Attendance rewords = _MasterData.AttendanceDict[NextAttendenceDay];
+            Attendance rewords = _MasterData.getAttendanceData(NextAttendenceDay);
 
             DateTime CreateMailTime = DateTime.Now;
 
@@ -663,7 +663,7 @@ public class GameDb : IGameDb
     {
         DateTime CreateMailTime = DateTime.Now;
         DateTime expirationTime = productsMailExpireDate;
-        var itemList = new List<ItemCodeAndCount>(_MasterData.InAppProductDict[productCode].Item);
+        var itemList = new List<ItemCodeAndCount>(_MasterData.getInAppProductData(productCode).Item);
         var insertList = itemList.Select(item => new object[]
                 {uid,  MailTitle.Products, expirationTime
                 ,false, CreateMailTime, item.ItemCode, item.ItemCount}).ToArray();
@@ -769,8 +769,8 @@ public class GameDb : IGameDb
             var itemInfo = await _queryFactory.Query("playerItem").Where("UID", uid)
                 .Where("ItemUniqueID", itemUID).FirstOrDefaultAsync<PlayerItem>();
 
-            var enhanceMaxCount = _MasterData.ItemDict[itemInfo.ItemCode].EnhanceMaxCount;
-            var itemAttribute = _MasterData.ItemDict[itemInfo.ItemCode].Attribute;
+            var enhanceMaxCount = _MasterData.getItemData(itemInfo.ItemCode).EnhanceMaxCount;
+            var itemAttribute = _MasterData.getItemData(itemInfo.ItemCode).Attribute;
             var enhanceResult = false;
 
             PlayerItemForClient enhancedItem = null;
@@ -859,17 +859,17 @@ public class GameDb : IGameDb
 
     public List<ItemCodeAndCount> GetStageItemInfo(Int32 stageCode)
     {
-        return _MasterData.StageItemDict[stageCode].ItemInfoList;
+        return _MasterData.getStageItemData(stageCode).ItemInfoList;
     }
 
     public bool CheckItemExistInStage(Int32 itemCode, Int32 stageCode)
     {
-        return _MasterData.StageItemDict[stageCode].ItemCode.Contains(itemCode);
+        return _MasterData.getStageItemData(stageCode).ItemCode.Contains(itemCode);
     }
 
     public Int32 GetItemMaxCount(Int32 itemCode, Int32 stageCode)
     {
-        return _MasterData.StageItemDict[stageCode].ItemCount[itemCode];
+        return _MasterData.getStageItemData(stageCode).ItemCount[itemCode];
     }
 
     public ErrorCode CheckCanFarmingItem(Int32 itemCode, Int32 itemCount, Int32 stageCode, InStageItem currFarmingItem)
@@ -896,7 +896,7 @@ public class GameDb : IGameDb
 
     public List<NPCInfo> GetStageNPCInfo(Int32 stageCode)
     {
-        return _MasterData.StageNPCDict[stageCode].NPCInfoList;
+        return _MasterData.getStageNPCData(stageCode).NPCInfoList;
     }
 
     public (List<ItemCodeAndCount>, List<NPCInfo>) GetStageInfo(Int32 stageCode)
@@ -906,14 +906,14 @@ public class GameDb : IGameDb
 
     public Int32 GetNPCMaxCount(Int32 NpcCode, Int32 stageCode)
     {
-        return _MasterData.StageNPCDict[stageCode].NPCCount[NpcCode];
+        return _MasterData.getStageNPCData(stageCode).NPCCount[NpcCode];
     }
 
     public bool CheckNPCExistInStage(Int32 NPCCode, Int32 stageCode)
     {
         bool isExist = false;
 
-        foreach (var npc in _MasterData.StageNPCDict[stageCode].NPCInfoList)
+        foreach (var npc in _MasterData.getStageNPCData(stageCode).NPCInfoList)
         {
             if (npc.NPCCode == NPCCode) { isExist = true; break; }
         }
@@ -950,7 +950,7 @@ public class GameDb : IGameDb
             return ErrorCode.PlayerClearStageDisable;
         }
 
-        Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.StageNPCDict[stageCode].NPCCount);
+        Dictionary<int, int> leftNPCCount = new Dictionary<int, int>(_MasterData.getStageNPCData(stageCode).NPCCount);
 
         foreach (var npc in currKilledNpc)
         {
@@ -977,7 +977,7 @@ public class GameDb : IGameDb
         {
             foreach (var it in earnItemList)
             {
-                bool canOverlap = _MasterData.ItemDict[it.ItemCode].CanOverlap;
+                bool canOverlap = _MasterData.getItemData(it.ItemCode).CanOverlap;
 
                 if (canOverlap == false)
                 {
@@ -1030,7 +1030,7 @@ public class GameDb : IGameDb
         {
             foreach(var npcInfo in killedNpcs)
             {
-                Int32 npcExp = _MasterData.StageNPCDict[stageCode].NPCExp[npcInfo.NpcCode];
+                Int32 npcExp = _MasterData.getStageNPCData(stageCode).NPCExp[npcInfo.NpcCode];
                 earnExp += npcExp * npcInfo.NpcCount;
             }
 
