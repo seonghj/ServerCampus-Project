@@ -583,10 +583,10 @@ public class GameDb : IGameDb
 
     public async Task<ErrorCode> SendAttendenceRewordsMail(Int32 uid)
     {
-        PlayerInfo playerInfo = null;
+        PlayerInfo playerInfoBeforeUpdate = null;
         try
         {
-            (ErrorCode errorCode, playerInfo) = await GetPlayerInfo(uid);
+            (ErrorCode errorCode, playerInfoBeforeUpdate) = await GetPlayerInfo(uid);
             if(errorCode != ErrorCode.None)
             {
                 _logger.ZLogError(
@@ -594,14 +594,14 @@ public class GameDb : IGameDb
                 return ErrorCode.SendAttendenceRewordsFail;
             }
 
-            TimeSpan DateDifference = DateTime.Now.Date - playerInfo.LastLoginTime.Date;
+            TimeSpan DateDifference = DateTime.Now.Date - playerInfoBeforeUpdate.LastLoginTime.Date;
             Int32 NextAttendenceDay = 0;
 
             if (DateDifference.Days != 1)
             {
                 NextAttendenceDay = 1;
             }
-            else NextAttendenceDay = playerInfo.ConsecutiveLoginDays + 1;
+            else NextAttendenceDay = playerInfoBeforeUpdate.ConsecutiveLoginDays + 1;
 
 
             var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
@@ -635,8 +635,8 @@ public class GameDb : IGameDb
                 updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                     .UpdateAsync(new
                     {
-                        ConsecutiveLoginDays = playerInfo.ConsecutiveLoginDays,
-                        LastLoginTime = playerInfo.LastLoginTime
+                        ConsecutiveLoginDays = playerInfoBeforeUpdate.ConsecutiveLoginDays,
+                        LastLoginTime = playerInfoBeforeUpdate.LastLoginTime
                     });
             }
 
@@ -644,13 +644,13 @@ public class GameDb : IGameDb
         }
         catch
         {
-            if (playerInfo != null)
+            if (playerInfoBeforeUpdate != null)
             {
                 var updateResult = await _queryFactory.Query("PlayerInfo").Where("UID", uid)
                     .UpdateAsync(new
                     {
-                        ConsecutiveLoginDays = playerInfo.ConsecutiveLoginDays,
-                        LastLoginTime = playerInfo.LastLoginTime
+                        ConsecutiveLoginDays = playerInfoBeforeUpdate.ConsecutiveLoginDays,
+                        LastLoginTime = playerInfoBeforeUpdate.LastLoginTime
                     });
             }
             _logger.ZLogError(
