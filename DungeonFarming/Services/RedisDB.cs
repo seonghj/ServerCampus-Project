@@ -49,6 +49,32 @@ public class RedisDb : IRedisDb
         return TimeSpan.FromHours(RediskeyExpireTime.InStageDataExpireHour);
     }
 
+    private InStageNpc MakeKilledNpcData(Int32 NpcCode, Int32 maxCount)
+    {
+        InStageNpc data = new InStageNpc()
+        {
+            NpcCode = NpcCode,
+            NpcCount = 1,
+            MaxCount = maxCount,
+            KillTime = DateTime.Now
+        };
+
+        return data;
+    }
+
+    private InStageItem MakeFarmingItemData(Int32 ItemCode, Int32 ItemCount, Int32 maxCount)
+    {
+        InStageItem data = new InStageItem()
+        {
+            ItemCode = ItemCode,
+            ItemCount = ItemCount,
+            MaxCount = maxCount,
+            FarmingTime = DateTime.Now
+        };
+
+        return data;
+    }
+
     public async Task<ErrorCode> InsertPlayerAuthAsync(string accountid)
     {
         var AuthKey = Service.Security.CreatePlayerAuth(accountid);
@@ -290,12 +316,7 @@ public class RedisDb : IRedisDb
         { 
             var redis = new RedisDictionary<Int32, InStageItem>(_redisConn, MakeFarmingItemKey(uid, stageCode)
                 , StageDataExpireTime());
-            InStageItem insertData = new InStageItem() { 
-                ItemCode = ItemCode,
-                ItemCount = ItemCount,
-                MaxCount = maxCount,
-                FarmingTime = DateTime.Now
-            };
+            InStageItem insertData = MakeFarmingItemData(ItemCode, ItemCount, maxCount);
 
             var gerOrSetResult = await redis.GetOrSetAsync(ItemCode, async (key) =>
             {
@@ -413,14 +434,8 @@ public class RedisDb : IRedisDb
     {
         try
         {
-            InStageNpc insertData = new InStageNpc()
-            {
-                NpcCode = NpcCode,
-                NpcCount = 1,
-                MaxCount = maxCount,
-                KillTime = DateTime.Now
-            };
-
+            InStageNpc insertData = MakeKilledNpcData(NpcCode, maxCount);
+           
             var redis = new RedisDictionary<Int32, InStageNpc>(_redisConn, MakeKilledNpcKey(uid, stageCode)
                 , StageDataExpireTime());
             var gerOrSetResult = await redis.GetOrSetAsync(NpcCode, async (key) =>
@@ -554,7 +569,6 @@ public class RediskeyExpireTime
     public const ushort NxKeyExpireSecond = 3;
     public const ushort RegistKeyExpireSecond = 6000;
     public const ushort LoginKeyExpireMin = 60;
-    public const ushort TicketKeyExpireSecond = 6000;
 
     public const ushort InStageDataExpireHour = 1;
 }
