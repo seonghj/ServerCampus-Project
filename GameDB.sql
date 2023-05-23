@@ -25,8 +25,8 @@ DROP TABLE IF EXISTS `mail`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `mail` (
-  `UID` int NOT NULL,
   `MailCode` int NOT NULL AUTO_INCREMENT,
+  `UID` int NOT NULL,
   `Title` varchar(45) NOT NULL,
   `ExpirationDate` datetime DEFAULT NULL,
   `IsReceive` tinyint NOT NULL,
@@ -54,8 +54,8 @@ DROP TABLE IF EXISTS `playerinfo`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `playerinfo` (
-  `AccountID` varchar(50) NOT NULL,
   `UID` int NOT NULL AUTO_INCREMENT,
+  `AccountID` varchar(50) NOT NULL,
   `Level` int NOT NULL,
   `EXP` int NOT NULL,
   `HP` int NOT NULL,
@@ -85,9 +85,9 @@ DROP TABLE IF EXISTS `playeritem`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `playeritem` (
+  `ItemUniqueID` int NOT NULL AUTO_INCREMENT,
   `UID` int NOT NULL,
   `ItemCode` int NOT NULL,
-  `ItemUniqueID` int NOT NULL AUTO_INCREMENT,
   `Attack` int NOT NULL,
   `Defence` int NOT NULL,
   `Magic` int NOT NULL,
@@ -140,4 +140,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-05-23 11:26:47
+-- Dump completed on 2023-05-23 11:40:54
