@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `accountdb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `accountdb`;
 -- MySQL dump 10.13  Distrib 8.0.22, for Win64 (x86_64)
 --
 -- Host: 127.0.0.1    Database: accountdb
@@ -29,8 +27,7 @@ CREATE TABLE `account` (
   `Salt` varchar(100) NOT NULL,
   `HashedPW` varchar(100) NOT NULL,
   `CreatedAt` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '생성 날짜',
-  PRIMARY KEY (`AccountID`),
-  UNIQUE KEY `Email` (`AccountID`)
+  PRIMARY KEY (`AccountID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='계정 정보 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -52,4 +49,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-05-23 11:40:28
+-- Dump completed on 2023-05-23 11:50:44
