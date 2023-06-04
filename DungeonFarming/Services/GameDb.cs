@@ -473,7 +473,6 @@ public class GameDb : IGameDb
         {
             var Mails = await _queryFactory.Query("Mail").Where("UID", uid)
                 .Where("ExpirationDate", ">=", DateTime.Now.Date)
-                .OrderBy("CreatedAt")
                 .ForPage(page, mailPageSize).GetAsync<Mail>();
 
             return (ErrorCode.None, Mails.ToList<Mail>());

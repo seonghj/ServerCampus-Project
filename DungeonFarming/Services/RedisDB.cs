@@ -227,7 +227,7 @@ public class RedisDb : IRedisDb
             {
                 s_logger.ZLogError(
                    $"ErrorMessage: Can Not Get Notification, RedisDictionary Get Error");
-                return (ErrorCode.AuthTokenNotFound, null);
+                return (ErrorCode.NotExistNofitication, null);
             }
             var NoticeList = new List<NoticeContent>();
             foreach (var item in result)

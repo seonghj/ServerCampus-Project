@@ -73,6 +73,7 @@ public enum ErrorCode : UInt16
     GetMasterDataError = 4019,
     //Redis 5000-
     RedisDbConnectionFail = 5002,
+    NotExistNofitication = 5003,
 
     // InStage 6000~
     CheckStartStageError = 6001,
