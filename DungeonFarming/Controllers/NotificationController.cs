@@ -17,23 +17,20 @@ public class Notification : ControllerBase
 {
     private readonly IRedisDb _redisDb;
     readonly ILogger<Notification> _logger;
-    readonly IOptions<RedisHashKeys> _hashkey;
 
     public Notification(ILogger<Notification> logger, IAccountDb accountDb
         , IRedisDb redisDb, IOptions<RedisHashKeys> redisHashKeys)
     {
         _logger = logger;
         _redisDb = redisDb;
-        _hashkey = redisHashKeys;
     }
 
     [HttpPost]
     public async Task<NotificationResponse> Post(NotificationRequest request)
     {
         var response = new NotificationResponse();
-        var NotificationKey = _hashkey.Value.Notification;
 
-        (var errorCode, response.NotificationList) = await _redisDb.GetNotificationAsync(NotificationKey);
+        (var errorCode, response.NotificationList) = await _redisDb.GetNotificationAsync();
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

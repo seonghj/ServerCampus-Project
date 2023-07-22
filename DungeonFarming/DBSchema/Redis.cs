@@ -35,3 +35,12 @@ public class InStageNpc
     public Int32 MaxCount { get; set; }
     public DateTime KillTime { get; set; }
 }
+
+public class ChatInfo
+{
+    public Int32 PlayerUID { get; set; }
+
+    public string Message { get; set; }
+
+    public DateTime Time { get; set; }
+}

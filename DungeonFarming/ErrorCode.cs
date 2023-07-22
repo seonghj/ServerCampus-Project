@@ -89,5 +89,8 @@ public enum ErrorCode : UInt16
     EarnStageClearItemRewordsFail = 6011,
     EarnStageClearExpRewordsFail = 6012,
     FarmingItemListAlreadyEmpty = 6013,
-    KilledNPCListAlreadyEmpty = 6014
+    KilledNPCListAlreadyEmpty = 6014,
+
+    SendChatFail = 7001,
+    ReceiveChatFail = 7002
 }

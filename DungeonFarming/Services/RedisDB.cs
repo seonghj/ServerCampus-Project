@@ -15,13 +15,18 @@ using System.Text.Json;
 using StackExchange.Redis;
 using DungeonFarming.Controllers;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DungeonFarming.Services;
 
 public class RedisDb : IRedisDb
 {
+    private const string NotificationKey = "Notification";
     private const string FarmingItemKey = "FarmingItem_";
     private const string KilledNPCKey = "KilledNPC_";
+    private const string ChattingKey = "ChatChannel_";
+
+    private const Int32 maxChatToRecv = 10;
 
     public RedisConnection _redisConn;
     private static readonly ILogger<RedisDb> s_logger = GetLogger<RedisDb>();
@@ -216,59 +221,27 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync(string NotificationKey)
+    public async Task<(ErrorCode, List<NoticeContent>)> GetNotificationAsync()
     {
 
         try
         {
-            var redis = new RedisDictionary<string, string>(_redisConn, NotificationKey, null);
-            var result = await redis.GetAllAsync();
-            if (result.Count == 0)
+            var redis = new RedisSet<NoticeContent>(_redisConn, NotificationKey, null);
+            var result = await redis.MembersAsync();
+            if (result.Length == 0)
             {
                 s_logger.ZLogError(
                    $"ErrorMessage: Can Not Get Notification, RedisDictionary Get Error");
                 return (ErrorCode.NotExistNofitication, null);
             }
-            var NoticeList = new List<NoticeContent>();
-            foreach (var item in result)
-            {
-                NoticeList.Add(new NoticeContent
-                {
-                    title = item.Key,
-                    Content = item.Value
-                });
-            }
 
-            return (ErrorCode.None, NoticeList);
+            return (ErrorCode.None, result.ToList<NoticeContent>());
         }
         catch
         {
             s_logger.ZLogError(
                    $"ErrorMessage: Redis Connection Error");
             return (ErrorCode.RedisDbConnectionFail, null);
-        }
-    }
-
-    public async Task<ErrorCode> SetNotificationAsync(string NotificationKey, string title, string Content)
-    {
-        try
-        {
-            var redis = new RedisDictionary<string, string>(_redisConn, NotificationKey, null);
-            var result = await redis.SetAsync(title, Content);
-            if (!result)
-            {
-                s_logger.ZLogError(
-                   $"ErrorMessage: Can Not Set Notification, RedisDictionary Set Error");
-                return ErrorCode.AuthTokenNotFound;
-            }
-            
-            return ErrorCode.None;
-        }
-        catch
-        {
-            s_logger.ZLogError(
-                   $"ErrorMessage: Redis Connection Error");
-            return ErrorCode.RedisDbConnectionFail;
         }
     }
 
@@ -542,6 +515,8 @@ public class RedisDb : IRedisDb
         }
     }
 
+
+
     public async Task<ErrorCode> InitInStageData(Int32 uid, Int32 stageCode)
     {
         var errorCode = await DeleteFarmingItemList(uid, stageCode);
@@ -556,6 +531,64 @@ public class RedisDb : IRedisDb
             return errorCode;
         }
         return ErrorCode.None;
+    }
+
+    public async Task<ErrorCode> SendChat(Int32 uid, string message)
+    {
+        try
+        {
+            var redisConnection = _redisConn.GetConnection();
+            var db = redisConnection.GetDatabase();
+            var streamName = ChattingKey + "1";
+
+            var chatdata = new ChatInfo
+            {
+                PlayerUID= uid,
+                Message = message,
+                Time = DateTime.Now,
+            };
+
+            var entryId = await db.StreamAddAsync(streamName
+                , "", JsonSerializer.Serialize(chatdata));
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Send Chat Error");
+            return ErrorCode.SendChatFail;
+        }
+    }
+
+    public async Task<(ErrorCode, List<ChatInfo>)> ReceiveLatestChat(Int32 uid, string messageID)
+    {
+        try
+        {
+            var redisConnection = _redisConn.GetConnection();
+            var db = redisConnection.GetDatabase();
+            var streamName = ChattingKey + "1";
+
+            var startID = messageID;
+            var endID = "+";
+
+            var entries = await db.StreamRangeAsync(streamName, startID, endID, maxChatToRecv);
+
+            List<ChatInfo> list = new List<ChatInfo>();
+            foreach(var entry in entries)
+            {
+                ChatInfo ci = JsonSerializer.Deserialize<ChatInfo>(entry.Values.FirstOrDefault().Value);
+                list.Add(ci);
+            }
+
+            return (ErrorCode.None, list);
+        }
+        catch (Exception ex)
+        {
+            s_logger.ZLogError(ex,
+                  $"ErrorMessage: Receive Chat Error");
+            return (ErrorCode.ReceiveChatFail, null);
+        }
     }
 
     public TimeSpan NxKeyTimeSpan()
