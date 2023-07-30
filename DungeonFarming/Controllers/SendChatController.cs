@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using ZLogger;
 using static LogManager;
 using DungeonFarming.MasterData;
+using StackExchange.Redis;
 
 namespace DungeonFarming.Controllers;
 
@@ -34,9 +35,10 @@ public class SendChatController : ControllerBase
         var response = new SendChatResponse();
 
         Int32 uid = request.UID;
+        Int32 channel = request.Channel;
         string message = request.Message;
 
-        var errorCode = await _redisDb.SendChat(uid, message);
+        var errorCode = await _redisDb.SendChat(uid, channel, message);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

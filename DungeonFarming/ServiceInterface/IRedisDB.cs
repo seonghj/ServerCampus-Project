@@ -46,7 +46,7 @@ public interface IRedisDb
 
     public Task<ErrorCode> InitInStageData(Int32 uid, Int32 stageCode);
 
-    public Task<ErrorCode> SendChat(Int32 uid, string message);
+    public Task<ErrorCode> SendChat(Int32 uid, Int32 channel, string message);
 
-    public Task<(ErrorCode, List<ChatInfo>)> ReceiveLatestChat(Int32 uid, string messageID);
+    public Task<(ErrorCode, List<ChatInfo>)> ReceiveLatestChat(Int32 uid, Int32 channel, string messageID);
 }

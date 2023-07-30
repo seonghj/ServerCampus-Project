@@ -34,9 +34,10 @@ public class ReceiveChatController : ControllerBase
         var response = new ReceiveChatResponse();
 
         Int32 uid = request.UID;
-        string messageID = request.MessageID;
+        int channel = request.Channel;
+        string messageID = request.LatestMessageID;
 
-        (var errorCode, response.Chats)= await _redisDb.ReceiveLatestChat(uid, messageID);
+        (var errorCode, response.Chats)= await _redisDb.ReceiveLatestChat(uid, channel, messageID);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

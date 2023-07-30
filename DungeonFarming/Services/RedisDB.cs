@@ -533,13 +533,13 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    public async Task<ErrorCode> SendChat(Int32 uid, string message)
+    public async Task<ErrorCode> SendChat(Int32 uid, Int32 channel, string message)
     {
         try
         {
             var redisConnection = _redisConn.GetConnection();
             var db = redisConnection.GetDatabase();
-            var streamName = ChattingKey + "1";
+            var streamName = ChattingKey + channel.ToString();
 
             var chatdata = new ChatInfo
             {
@@ -561,13 +561,13 @@ public class RedisDb : IRedisDb
         }
     }
 
-    public async Task<(ErrorCode, List<ChatInfo>)> ReceiveLatestChat(Int32 uid, string messageID)
+    public async Task<(ErrorCode, List<ChatInfo>)> ReceiveLatestChat(Int32 uid, Int32 channel, string messageID)
     {
         try
         {
             var redisConnection = _redisConn.GetConnection();
             var db = redisConnection.GetDatabase();
-            var streamName = ChattingKey + "1";
+            var streamName = ChattingKey + channel.ToString();
 
             var startID = messageID;
             var endID = "+";
